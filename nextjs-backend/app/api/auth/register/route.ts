@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 const db = adminFirestore;
 
 export async function POST(req: NextRequest, res:NextResponse) {
-    const { idToken, name, email } = await req.json();
+    const { idToken, email } = await req.json();
 
     try {
       // Verify the ID token
@@ -12,7 +12,6 @@ export async function POST(req: NextRequest, res:NextResponse) {
 
       // Add user to Firestore
       await db.collection('users').doc(decodedToken.uid).set({
-        name,
         email,
         createdAt: new Date(),
       });

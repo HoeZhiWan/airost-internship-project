@@ -4,7 +4,6 @@ import { auth } from "../../../firebase-client";
 const registerUser = async (event) => {
   event.preventDefault()
   const formData = new FormData(event.target);
-  const name = formData.get('name'); 
   const email = formData.get('email'); 
   const password = formData.get('password')
 
@@ -15,11 +14,11 @@ const registerUser = async (event) => {
     const response = await fetch('http://localhost:3000/api/auth/register', 
       { method: 'POST', 
         headers: { 'Content-Type': 'application/json', }, 
-        body: JSON.stringify({ idToken, name, email }), 
+        body: JSON.stringify({ idToken, email }), 
       }); 
       
       if(!response.ok) {
-        throw new Error('User registered and data sent to API'); 
+        throw new Error('Issue connecting with API'); 
       }
 
       const data = await response.json();
@@ -37,10 +36,6 @@ function RegisterPage() {
       <div className="w-[380px] h-fit p-[30px] bg-shade-400 rounded-[10px]">
         <div className="text-[32px] font-bold text-primary-tint-300">Register</div>
         <form onSubmit={registerUser} className="mx-3 text-text text-[16px]">
-        <div className="flex flex-col">
-              <label className="mt-[24px] font-bold">Name</label>
-              <input id="name" name="name" type="text" className="text-[12px] border-0 mt-[10px] px-[8px] py-[6px] h-[30px] bg-shade-300 placeholder-text italic rounded-[5px] focus:ring-0" placeholder="Your Name" />
-          </div>
           <div className="flex flex-col">
               <label className="mt-[24px] font-bold">Email</label>
               <input id="email" name="email" type="email" className="text-[12px] border-0 mt-[10px] px-[8px] py-[6px] h-[30px] bg-shade-300 placeholder-text italic rounded-[5px] focus:ring-0" placeholder="example@domain.com" />
