@@ -1,17 +1,53 @@
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../../firebase-client";
+
+const registerUser = async (event) => {
+  event.preventDefault()
+  const formData = new FormData(event.target);
+  const name = formData.get('name'); 
+  const email = formData.get('email'); 
+  const password = formData.get('password')
+
+  try { 
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password); 
+    console.log('User has been signed up')
+    const idToken = await userCredential.user.getIdToken(); 
+    const response = await fetch('http://localhost:3000/api/auth/register', 
+      { method: 'POST', 
+        headers: { 'Content-Type': 'application/json', }, 
+        body: JSON.stringify({ idToken, name, email }), 
+      }); 
+      
+      if(!response.ok) {
+        throw new Error('User registered and data sent to API'); 
+      }
+
+      const data = await response.json();
+      console.log('User registered and data sent to API', data);
+      
+    } catch (error) { 
+      console.error('Error registering user: ', error);
+    }
+};
+
+
 function RegisterPage() {
   return (
     <div className="w-screen h-screen flex justify-center items-center bg-shade-500">
       <div className="w-[380px] h-fit p-[30px] bg-shade-400 rounded-[10px]">
         <div className="text-[32px] font-bold text-primary-tint-300">Register</div>
-        <form className="mx-3 text-text text-[16px]">
+        <form onSubmit={registerUser} className="mx-3 text-text text-[16px]">
+        <div className="flex flex-col">
+              <label className="mt-[24px] font-bold">Name</label>
+              <input id="name" name="name" type="text" className="text-[12px] border-0 mt-[10px] px-[8px] py-[6px] h-[30px] bg-shade-300 placeholder-text italic rounded-[5px] focus:ring-0" placeholder="Your Name" />
+          </div>
           <div className="flex flex-col">
               <label className="mt-[24px] font-bold">Email</label>
-              <input type="email" className="text-[12px] border-0 mt-[10px] px-[8px] py-[6px] h-[30px] bg-shade-300 placeholder-text italic rounded-[5px] focus:ring-0" placeholder="example@domain.com" />
+              <input id="email" name="email" type="email" className="text-[12px] border-0 mt-[10px] px-[8px] py-[6px] h-[30px] bg-shade-300 placeholder-text italic rounded-[5px] focus:ring-0" placeholder="example@domain.com" />
           </div>
-
           <div className="flex flex-col">
               <label className="mt-[24px] font-bold">Password</label>
-              <input type="password" className="text-[12px] border-0 mt-[10px] px-[8px] py-[6px] h-[30px] bg-shade-300 placeholder-text italic rounded-[5px] focus:ring-0" placeholder="Must have at least 8 characters" />
+              <input id="password" name="password" type="password" className="text-[12px] border-0 mt-[10px] px-[8px] py-[6px] h-[30px] bg-shade-300 placeholder-text italic rounded-[5px] focus:ring-0" placeholder="Must have at least 8 characters" />
           </div>
 
           <div className="flex flex-col">
