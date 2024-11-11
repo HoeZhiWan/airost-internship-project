@@ -1,4 +1,18 @@
+import { auth } from "../../../firebase-client"
+import { emailVerification } from "../../../lib/action";
+
 function ConfirmationPage() {
+  let user = auth.currentUser;
+  const email = user.email;
+
+  const handleVerifyEmail = async () => {
+    try {
+      emailVerification(auth);
+    } catch(error) {
+      throw new Error('Failed to send verifcation email. Please try logging in.');
+    }
+  }
+
   return (
     <div className="w-screen h-screen flex justify-center items-center bg-shade-500">
     <div className="w-fit h-fit p-[30px] bg-shade-400 rounded-[10px]">
@@ -8,14 +22,14 @@ function ConfirmationPage() {
 
           <div className="flex flex-col items-center">
             <div className="text-[16px] mt-8 max-w-[380px]">We sent an email to:</div>
-            <div className="">[Email]</div>
+            <div className="">{email}</div>
           </div>
 
           <div className="mt-[32px] max-w-[480px]">Just click on the link in that email to complete your signup. If you don’t see it, you may need to check your spam folder.</div>
           
           <div className="mt-[32px] max-w-[480px]">Still can&apos;t find the email? No problem.</div>
 
-        <button href="#" className="flex justify-center mt-8 w-full h-fit py-[8px] bg-primary-tint-300 text-white rounded-[5px] fs-6 duration-200">Resend Verification Email</button>
+        <button onClick={handleVerifyEmail} className="flex justify-center mt-8 w-full h-fit py-[8px] bg-primary-tint-300 text-white rounded-[5px] fs-6 duration-200">Resend Verification Email</button>
         
       </form>
     </div>

@@ -1,25 +1,22 @@
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "./../firebase-client";
 import { z } from "zod";
 
-const formSchema = z.object({
-    name: z.string().min(1, {
-        message: 'Name is required.',
-    }),
+const registerSchema = z.object({
     email: z.string()
     .min(1, {
         message:'Email address is required.'
     }),
-    password: z.string().min(6, {
-        message: 'Password must be a min length of 6.'
+    password: z.string().min(8, {
+        message: 'Password must be a min length of 8.'
     }
     ),
-    confirmation: z.string().min(1, {
+    confirmPassword: z.string().min(1, {
         message: 'Please re-enter password.'
     })
-}).refine((data) => data.password === data.confirmation, {
+}).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match. Please try again.",
-    path: ["confirmation"], // path of error
+    path: ["confirmPassword"], // path of error
 }).refine((data) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email), {
     message: "Invalid email address",
     path: ["email"], // path of error
@@ -48,34 +45,25 @@ export type State = {
 }
 
 // used in /RegisterPage/RegisterPage.jsx
-export const registerUser = async (event) => {
-    event.preventDefault()
-
-    const formData = new FormData(event.target);
-
-    const validatedFields = formSchema.safeParse({
-        email: formData.get("email"),
-        password: formData.get("password"),
-        name: formData.get("name"),
-        confirmation: formData.get("confirm-password")
+export const registerUser = async (email: string, password: string, confirmPassword: string) => {
+    const validatedFields = registerSchema.safeParse({
+        email,
+        password,
+        confirmPassword
     })
 
     if (!validatedFields.success) {
         return {
+            success: false,
             errors: validatedFields.error.flatten().fieldErrors,
-            message: "Missing Fields. Failed to sign up.",
-            values: {
-                name: formData.get("name")?.toString(),
-                email: formData.get("email")?.toString()
-            }
+            message: "Missing/Invalid Fields. Failed to sign up.",
         }
     }
 
-    const { name, email, password} = validatedFields.data;
-
     try { 
       const userCredential = await createUserWithEmailAndPassword(auth, email, password); 
-      console.log('User has been signed up')
+      console.log('User has been signed up');
+
       const idToken = await userCredential.user.getIdToken(); 
       const response = await fetch('http://localhost:3000/api/auth/register', 
         { method: 'POST', 
@@ -89,9 +77,25 @@ export const registerUser = async (event) => {
   
         const data = await response.json();
         console.log('User registered and data sent to API', data);
+
+        try {
+          emailVerification(userCredential);
+        } catch(error) {
+          throw new Error('Failed to send verifcation email. Please try logging in.');
+        }
+
+        return {success: true, data};
         
       } catch (error) { 
+        // Extract error code 
+        const errorCode = error['code']; 
+        // Get user-friendly error message 
+        const errorMessage = errorMessages[errorCode as keyof typeof errorMessages] || 'An unknown error occurred. Please try again.'; 
+        // Display the error message 
+        console.error("Issue sigining in with Email", error);
+
         console.error('Error registering user: ', error);
+        return {success: false, message: errorMessage};
       }
 };
 
@@ -125,3 +129,15 @@ const loginUser = async (event) => {
         console.error('Error logging in user: ', error);
       }
 };
+
+export const emailVerification = async (userCredential) => {
+  let user = userCredential.user;
+
+  const actionCodeSettings = { 
+    url: `http://localhost:5173/verify?email=${user.email}`, 
+    handleCodeInApp: true,
+  }
+
+  await sendEmailVerification(user, actionCodeSettings);
+  console.log("Succeeded in sending email verification");
+}
