@@ -10,14 +10,24 @@ export async function POST(req: NextRequest, res:NextResponse) {
       // Verify the ID token
       const decodedToken = await adminAuth.verifyIdToken(idToken);
 
-      // Add user to Firestore
-      await db.collection('users').doc(decodedToken.uid).set({
-        lastLogin: new Date(),
-      });
+      let user = await adminAuth.getUser(decodedToken.id);
+      
+      if (user.emailVerified) {
+        // Add user to Firestore
+        await db.collection('users').doc(decodedToken.uid).set({
+            verifiedAt: new Date(),
+        });
+    
+        const response = JSON.stringify({ message: 'User added successfully' })
+    
+        return new NextResponse(response, {status:200});
+      } else {
+        const response = JSON.stringify({ message: 'User email has not been verified.' });
 
-      const response = JSON.stringify({ message: 'User data updated successfully' })
-
-      return new NextResponse(response, {status:200});
+        return new NextResponse(response, {status:409});
+      }
+      
+      
     } catch (error) {
       console.error('Error verifying ID token or adding user: ', error);
 

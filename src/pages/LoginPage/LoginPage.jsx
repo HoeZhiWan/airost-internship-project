@@ -5,7 +5,7 @@ function LoginPage() {
         <div className="text-[32px] font-bold text-primary-tint-300">Log in</div>
         <div className="text-[16px] font-semibold text-text">to start collaborating</div>
         
-        <form className="mx-3 text-text text-[16px]">
+        <form action={loginUser} className="mx-3 text-text text-[16px]">
 
           <div className="flex flex-col">
               <label className="mt-[32px] font-bold">Email</label>
@@ -18,8 +18,8 @@ function LoginPage() {
                 <input id="password" name="password" type="password" className="text-[12px] border-0 mt-[10px] px-[8px] py-[6px] h-[30px] bg-shade-300 placeholder-text italic rounded-[5px] focus:ring-0" placeholder="Must have at least 8 characters" />
             </div>
             <div className="flex justify-between">
-                <a className="mt-[4px] text-[12px] italic" href="">forget password?</a>
-                <a className="mt-[4px] text-[12px] italic" href="">Don’t have an account? Click here!</a>
+                <a className="mt-[4px] text-[12px] italic" href="/forgetpassword">Forgot password?</a>
+                <a className="mt-[4px] text-[12px] italic" href="/register">Don’t have an account? Click here!</a>
             </div>
           </div>
 
