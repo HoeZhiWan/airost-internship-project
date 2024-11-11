@@ -1,34 +1,5 @@
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../../firebase-client";
-
-const registerUser = async (event) => {
-  event.preventDefault()
-  const formData = new FormData(event.target);
-  const email = formData.get('email'); 
-  const password = formData.get('password')
-
-  try { 
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password); 
-    console.log('User has been signed up')
-    const idToken = await userCredential.user.getIdToken(); 
-    const response = await fetch('http://localhost:3000/api/auth/register', 
-      { method: 'POST', 
-        headers: { 'Content-Type': 'application/json', }, 
-        body: JSON.stringify({ idToken, email }), 
-      }); 
-      
-      if(!response.ok) {
-        throw new Error('Issue connecting with API'); 
-      }
-
-      const data = await response.json();
-      console.log('User registered and data sent to API', data);
-      
-    } catch (error) { 
-      console.error('Error registering user: ', error);
-    }
-};
-
+import { registerUser } from "../../../lib/action";
+import {useActionS}
 
 function RegisterPage() {
   return (
