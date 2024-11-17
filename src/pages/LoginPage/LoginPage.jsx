@@ -1,11 +1,43 @@
+import { loginUser } from "../../../lib/action";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 function LoginPage() {
+  onst [errors, setErrors] = useState({});
+  const [message, setMessage] = useState('');
+  const navigate = useNavigate();
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const email = formData.get('email');
+    const password = formData.get('password');
+
+    const result = await loginUser(email, password);
+    if (result.success) {
+      setMessage('Login successful');
+      setErrors({});
+      navigate('/');
+
+    } else if (result.errors) {
+      setErrors(result.errors);
+      if (result.message) {
+        setMessage(result.message);
+      }
+      
+    } else {
+      setMessage(result.message);
+    }
+  };
+
   return (
     <div className="w-screen h-screen flex justify-center items-center bg-shade-500">
       <div className="w-[380px] h-fit p-[30px] bg-shade-400 rounded-[10px]">
         <div className="text-[32px] font-bold text-primary-tint-300">Log in</div>
         <div className="text-[16px] font-semibold text-text">to start collaborating</div>
         
-        <form action={loginUser} className="mx-3 text-text text-[16px]">
+        <form action={handleSubmit} className="mx-3 text-text text-[16px]">
 
           <div className="flex flex-col">
               <label className="mt-[32px] font-bold">Email</label>

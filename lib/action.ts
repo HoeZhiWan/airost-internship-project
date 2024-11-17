@@ -86,35 +86,42 @@ export const registerUser = async (email: string, password: string, confirmPassw
 };
 
 // used in /LoginPage/LoginPage.jsx
-const loginUser = async (event) => {
-    event.preventDefault()
+export const loginUser = async (email:string, password:string) => {
+  const validatedFields = registerSchema.safeParse({
+    email,
+    password,
+  })
+
+  if (!validatedFields.success) {
+    return {
+        success: false,
+        errors: validatedFields.error.flatten().fieldErrors,
+        message: "Missing/Invalid Fields. Failed to sign up.",
+    }
+  }
   
-    const formData = new FormData(event.target);
-    const email = formData.get('email'); 
-    const password = formData.get('password')
+  try { 
+    const userCredential = await signInWithEmailAndPassword(auth, email, password); 
+    console.log('User has been signed in')
+    const idToken = await userCredential.user.getIdToken(); 
   
-    try { 
-      const userCredential = await signInWithEmailAndPassword(auth, email, password); 
-      console.log('User has been signed in')
-      const idToken = await userCredential.user.getIdToken(); 
-  
-      const response = await fetch('http://localhost:3000/api/auth/login', 
-        { method: 'POST', 
-          headers: { 'Content-Type': 'application/json', }, 
-          body: JSON.stringify({ idToken }), 
-        }); 
+    const response = await fetch('http://localhost:3000/api/auth/login', 
+      { method: 'POST', 
+        headers: { 'Content-Type': 'application/json', }, 
+        body: JSON.stringify({ idToken }), 
+      }); 
         
-        if(!response.ok) {
-          console.log(response);
-          throw new Error('Issue connecting with API'); 
-        }
+    if(!response.ok) {
+        console.log(response);
+        throw new Error('Issue connecting with API'); 
+    }
   
-        const data = await response.json();
-        console.log('User log ined and data sent to API', data);
+    const data = await response.json();
+    console.log('User log ined and data sent to API', data);
         
-      } catch (error) { 
-        console.error('Error logging in user: ', error);
-      }
+    } catch (error) { 
+      console.error('Error logging in user: ', error);
+    }
 };
 
 export const emailVerification = async (userCredential) => {
