@@ -10,6 +10,7 @@ const credentials: ServiceAccount = {
 
 const options: AppOptions = {
   credential: cert(credentials),
+  databaseURL: process.env.FIREBASE_DATABASE_URL
 };
 
 export const initializeFirebaseAdmin = () => {

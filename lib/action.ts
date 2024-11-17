@@ -30,20 +30,6 @@ const errorMessages = {
     'auth/email-already-in-use': 'Email already exists, please log in or verify.'
 };
 
-export type State = {
-    errors?: {
-        name?: string[];
-        email?: string[];
-        password?: string[];
-        confirmation?: string[];
-    };
-    message?: string | null;
-    values?: {
-        name? : string;
-        email?: string;
-    }
-}
-
 // used in /RegisterPage/RegisterPage.jsx
 export const registerUser = async (email: string, password: string, confirmPassword: string) => {
     const validatedFields = registerSchema.safeParse({
@@ -119,6 +105,7 @@ const loginUser = async (event) => {
         }); 
         
         if(!response.ok) {
+          console.log(response);
           throw new Error('Issue connecting with API'); 
         }
   
@@ -131,13 +118,25 @@ const loginUser = async (event) => {
 };
 
 export const emailVerification = async (userCredential) => {
-  let user = userCredential.user;
+  try {
+    let user = userCredential.user;
+    const idToken = await user.getIdToken(); 
+    const email = await user.email;
 
-  const actionCodeSettings = { 
-    url: `http://localhost:5173/verify?email=${user.email}`, 
-    handleCodeInApp: true,
+    const response = await fetch('http://localhost:3000/api/auth/verify/confirmation', 
+      { method: 'POST', 
+          headers: { 'Content-Type': 'application/json', }, 
+          body: JSON.stringify({ idToken, email }), 
+      }); 
+
+    if (!response.ok) {
+      console.log(response);
+      throw new Error('Issue connecting with API');
+    }
+
+    const data = await response.json();
+    console.log("Succeeded in sending email verification", data);
+  } catch (error) {
+    console.error('Error sending verfication email', error);
   }
-
-  await sendEmailVerification(user, actionCodeSettings);
-  console.log("Succeeded in sending email verification");
 }
