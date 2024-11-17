@@ -28,6 +28,7 @@ export default {
           }
         },
         text: "#ffffff",
+        error: "#ee4238",
       }
     },
   },
