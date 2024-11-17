@@ -22,6 +22,18 @@ const registerSchema = z.object({
     path: ["email"], // path of error
 });
 
+const loginSchema = z.object({
+  email: z.string()
+  .min(1, {
+      message:'Email address is required.'
+  }),
+  password: z.string().min(1, {
+      message: 'Password is required.'
+  })
+}).refine((data) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email), {
+  message: "Invalid email address",
+  path: ["email"], // path of error
+});;
 
 const errorMessages = { 
     'auth/invalid-credential': 'Invalid credential provided. Please try again.', 
@@ -87,16 +99,16 @@ export const registerUser = async (email: string, password: string, confirmPassw
 
 // used in /LoginPage/LoginPage.jsx
 export const loginUser = async (email:string, password:string) => {
-  const validatedFields = registerSchema.safeParse({
+  const validatedFields = loginSchema.safeParse({
     email,
-    password,
+    password
   })
 
   if (!validatedFields.success) {
     return {
-        success: false,
-        errors: validatedFields.error.flatten().fieldErrors,
-        message: "Missing/Invalid Fields. Failed to sign up.",
+      success: false,
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: "Missing/Invalid Fields. Failed to sign up.",
     }
   }
   
@@ -118,9 +130,19 @@ export const loginUser = async (email:string, password:string) => {
   
     const data = await response.json();
     console.log('User log ined and data sent to API', data);
+
+    return {success: true, data};
         
     } catch (error) { 
+      // Extract error code 
+      const errorCode = error['code']; 
+      // Get user-friendly error message 
+      const errorMessage = errorMessages[errorCode as keyof typeof errorMessages] || 'An unknown error occurred. Please try again.'; 
+      // Display the error message 
+      console.error("Issue logging with Email", error);
+
       console.error('Error logging in user: ', error);
+      return {success: false, message: errorMessage};
     }
 };
 
