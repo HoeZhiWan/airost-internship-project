@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 const db = adminFirestore;
 
 export async function POST(req: NextRequest, res:NextResponse) {
-    const { idToken, email } = await req.json();
+    const { idToken } = await req.json();
 
     try {
       // Verify the ID token
