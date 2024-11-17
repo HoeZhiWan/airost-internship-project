@@ -14,6 +14,7 @@ export async function POST(req: NextRequest, res:NextResponse) {
       await db.collection('users').doc(decodedToken.uid).set({
         email,
         createdAt: new Date(),
+        emailVerfied: false
       });
 
       const response = JSON.stringify({ message: 'User added successfully' })

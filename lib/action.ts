@@ -22,6 +22,18 @@ const registerSchema = z.object({
     path: ["email"], // path of error
 });
 
+const loginSchema = z.object({
+  email: z.string()
+  .min(1, {
+      message:'Email address is required.'
+  }),
+  password: z.string().min(1, {
+      message: 'Password is required.'
+  })
+}).refine((data) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email), {
+  message: "Invalid email address",
+  path: ["email"], // path of error
+});;
 
 const errorMessages = { 
     'auth/invalid-credential': 'Invalid credential provided. Please try again.', 
@@ -29,20 +41,6 @@ const errorMessages = {
     'auth/wrong-password': 'Incorrect password. Please try again.', 
     'auth/email-already-in-use': 'Email already exists, please log in or verify.'
 };
-
-export type State = {
-    errors?: {
-        name?: string[];
-        email?: string[];
-        password?: string[];
-        confirmation?: string[];
-    };
-    message?: string | null;
-    values?: {
-        name? : string;
-        email?: string;
-    }
-}
 
 // used in /RegisterPage/RegisterPage.jsx
 export const registerUser = async (email: string, password: string, confirmPassword: string) => {
@@ -100,44 +98,74 @@ export const registerUser = async (email: string, password: string, confirmPassw
 };
 
 // used in /LoginPage/LoginPage.jsx
-const loginUser = async (event) => {
-    event.preventDefault()
+export const loginUser = async (email:string, password:string) => {
+  const validatedFields = loginSchema.safeParse({
+    email,
+    password
+  })
+
+  if (!validatedFields.success) {
+    return {
+      success: false,
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: "Missing/Invalid Fields. Failed to sign up.",
+    }
+  }
   
-    const formData = new FormData(event.target);
-    const email = formData.get('email'); 
-    const password = formData.get('password')
+  try { 
+    const userCredential = await signInWithEmailAndPassword(auth, email, password); 
+    console.log('User has been signed in')
+    const idToken = await userCredential.user.getIdToken(); 
   
-    try { 
-      const userCredential = await signInWithEmailAndPassword(auth, email, password); 
-      console.log('User has been signed in')
-      const idToken = await userCredential.user.getIdToken(); 
-  
-      const response = await fetch('http://localhost:3000/api/auth/login', 
-        { method: 'POST', 
-          headers: { 'Content-Type': 'application/json', }, 
-          body: JSON.stringify({ idToken }), 
-        }); 
+    const response = await fetch('http://localhost:3000/api/auth/login', 
+      { method: 'POST', 
+        headers: { 'Content-Type': 'application/json', }, 
+        body: JSON.stringify({ idToken }), 
+      }); 
         
-        if(!response.ok) {
-          throw new Error('Issue connecting with API'); 
-        }
+    if(!response.ok) {
+        console.log(response);
+        throw new Error('Issue connecting with API'); 
+    }
   
-        const data = await response.json();
-        console.log('User log ined and data sent to API', data);
+    const data = await response.json();
+    console.log('User log ined and data sent to API', data);
+
+    return {success: true, data};
         
-      } catch (error) { 
-        console.error('Error logging in user: ', error);
-      }
+    } catch (error) { 
+      // Extract error code 
+      const errorCode = error['code']; 
+      // Get user-friendly error message 
+      const errorMessage = errorMessages[errorCode as keyof typeof errorMessages] || 'An unknown error occurred. Please try again.'; 
+      // Display the error message 
+      console.error("Issue logging with Email", error);
+
+      console.error('Error logging in user: ', error);
+      return {success: false, message: errorMessage};
+    }
 };
 
 export const emailVerification = async (userCredential) => {
-  let user = userCredential.user;
+  try {
+    let user = userCredential.user;
+    const idToken = await user.getIdToken(); 
+    const email = await user.email;
 
-  const actionCodeSettings = { 
-    url: `http://localhost:5173/verify?email=${user.email}`, 
-    handleCodeInApp: true,
+    const response = await fetch('http://localhost:3000/api/auth/verify/confirmation', 
+      { method: 'POST', 
+          headers: { 'Content-Type': 'application/json', }, 
+          body: JSON.stringify({ idToken, email }), 
+      }); 
+
+    if (!response.ok) {
+      console.log(response);
+      throw new Error('Issue connecting with API');
+    }
+
+    const data = await response.json();
+    console.log("Succeeded in sending email verification", data);
+  } catch (error) {
+    console.error('Error sending verfication email', error);
   }
-
-  await sendEmailVerification(user, actionCodeSettings);
-  console.log("Succeeded in sending email verification");
 }
