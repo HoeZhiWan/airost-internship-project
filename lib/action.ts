@@ -169,3 +169,5 @@ export const emailVerification = async (userCredential) => {
     console.error('Error sending verfication email', error);
   }
 }
+
+// test
