@@ -1,16 +1,19 @@
-function NavBar({groupName}) {
+import { useEffect } from "react"
+import { useSearchParams } from "react-router-dom"
+
+function NavBar({groupName, activeTab, setActiveTab}) {
   return (
     <div className="flex justify-between items-center text-[24px] font-bold h-16 px-[17px] py-[10px] border-b-[3px] border-[rgba(0,0,0,0.25)]">
         {groupName}
         <div className="flex gap-4">
-          <button>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-6">
+          <button onClick={() => setActiveTab("chat")}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={activeTab == "chat" ? "#08BD7A" : "#ffffff"} className="size-6">
               <path fillRule="evenodd" d="M4.848 2.771A49.144 49.144 0 0 1 12 2.25c2.43 0 4.817.178 7.152.52 1.978.292 3.348 2.024 3.348 3.97v6.02c0 1.946-1.37 3.678-3.348 3.97a48.901 48.901 0 0 1-3.476.383.39.39 0 0 0-.297.17l-2.755 4.133a.75.75 0 0 1-1.248 0l-2.755-4.133a.39.39 0 0 0-.297-.17 48.9 48.9 0 0 1-3.476-.384c-1.978-.29-3.348-2.024-3.348-3.97V6.741c0-1.946 1.37-3.68 3.348-3.97ZM6.75 8.25a.75.75 0 0 1 .75-.75h9a.75.75 0 0 1 0 1.5h-9a.75.75 0 0 1-.75-.75Zm.75 2.25a.75.75 0 0 0 0 1.5H12a.75.75 0 0 0 0-1.5H7.5Z" clipRule="evenodd" />
             </svg>
           </button>
 
-          <button>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-6">
+          <button onClick={() => setActiveTab("file")}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={activeTab == "file" ? "#08BD7A" : "#ffffff"} className="size-6">
               <path d="M19.5 21a3 3 0 0 0 3-3v-4.5a3 3 0 0 0-3-3h-15a3 3 0 0 0-3 3V18a3 3 0 0 0 3 3h15ZM1.5 10.146V6a3 3 0 0 1 3-3h5.379a2.25 2.25 0 0 1 1.59.659l2.122 2.121c.14.141.331.22.53.22H19.5a3 3 0 0 1 3 3v1.146A4.483 4.483 0 0 0 19.5 9h-15a4.483 4.483 0 0 0-3 1.146Z" />
             </svg>
           </button>
@@ -21,8 +24,8 @@ function NavBar({groupName}) {
             </svg>
           </button>
 
-          <button>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-6">
+          <button onClick={() => setActiveTab("todo")}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={activeTab == "todo" ? "#08BD7A" : "#ffffff"} className="size-6">
               <path fillRule="evenodd" d="M10.5 3A1.501 1.501 0 0 0 9 4.5h6A1.5 1.5 0 0 0 13.5 3h-3Zm-2.693.178A3 3 0 0 1 10.5 1.5h3a3 3 0 0 1 2.694 1.678c.497.042.992.092 1.486.15 1.497.173 2.57 1.46 2.57 2.929V19.5a3 3 0 0 1-3 3H6.75a3 3 0 0 1-3-3V6.257c0-1.47 1.073-2.756 2.57-2.93.493-.057.989-.107 1.487-.15Z" clipRule="evenodd" />
             </svg>
           </button>
@@ -38,6 +41,32 @@ function NavBar({groupName}) {
 }
 
 function MainPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = searchParams.get("tab") || "chat"
+
+  const setActiveTab = (tab) => {
+    setSearchParams({ tab });
+  }
+
+  const renderView = () => {
+    switch (activeTab) {
+      case "chat":
+        return "chat"
+      
+      case "file":
+        return "file"
+
+      case "todo":
+        return "todo"
+
+      default:
+        return "chat"
+    }
+  }
+
+  useEffect(() => {
+    console.log(activeTab)
+  }, [activeTab])
   return (
     <div className="flex h-screen text-[16px] text-text">
       <div className="basis-1/4 bg-shade-500">
@@ -49,9 +78,9 @@ function MainPage() {
         </div>
       </div>
       <div className="basis-3/4 bg-shade-400">
-        <NavBar groupName={"Group Name"} />
+        <NavBar groupName="Group Name" activeTab={activeTab} setActiveTab={setActiveTab} />
         <div className="h-16">
-          3
+          {renderView()}
         </div>
       </div>
     </div>
