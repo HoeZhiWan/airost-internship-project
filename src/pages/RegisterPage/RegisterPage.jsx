@@ -57,7 +57,7 @@ function RegisterPage() {
                 <label className="mt-[24px] font-bold">Re-enter Password</label>
                 <input id="confirmPassword" name="confirmPassword" type="password" className="border-0 mt-[10px] px-[12px] py-[8px] bg-shade-300 placeholder-text italic rounded-[5px] focus:ring-0" placeholder="Re-enter Password" />
             </div>
-            <div className="flex items-start mt-[4px]">
+            <div className="flex justify-between mt-[4px]">
               <div className="">
                 {errors.confirmPassword && 
                   errors.confirmPassword.map((error) => (
@@ -66,7 +66,7 @@ function RegisterPage() {
                     </p>
                 ))}
               </div>
-            <a className="self-start basis-1/2 text-[12px] italic" href="">Have an account? Click here!</a>
+              <div className="text-[14px] italic">Have an account? <a className="text-primary-tint-400 underline" href="/login">Click here!</a></div>
             </div>
           </div>
 
