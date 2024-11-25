@@ -1,16 +1,16 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom"
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 
-import RegisterPage from "./pages/RegisterPage/RegisterPage";
-import LoginPage from "./pages/LoginPage/LoginPage";
-import ForgetPasswordPage from "./pages/ForgetPasswordPage/ForgetPasswordPage";
-import ResetPasswordPage from "./pages/ForgetPasswordPage/ResetPasswordPage";
-import ConfirmationPage from "./pages/RegisterPage/ConfirmationPage";
-import SetupPage from "./pages/RegisterPage/SetupPage";
-import VerifyPage from "./pages/RegisterPage/VerifyPage";
+import RegisterPage from "./pages/RegisterPage/RegisterPage"
+import LoginPage from "./pages/LoginPage/LoginPage"
+import ForgetPasswordPage from "./pages/ForgetPasswordPage/ForgetPasswordPage"
+import ResetPasswordPage from "./pages/ForgetPasswordPage/ResetPasswordPage"
+import ConfirmationPage from "./pages/RegisterPage/ConfirmationPage"
+import SetupPage from "./pages/RegisterPage/SetupPage"
+import VerifyPage from "./pages/RegisterPage/VerifyPage"
 import ProfilePage from "./pages/ProfilePage/ProfilePage";
-import HomePage from "./pages/HomePage/HomePage";
+import MainPage from "./pages/MainPage/MainPage"
 
 function App() {
   return (
@@ -20,7 +20,7 @@ function App() {
           <Route path="/forgetPassword" element={<ForgetPasswordPage />} />
           <Route path="/reset" element={<ResetPasswordPage />} />
           <Route path="/verify" element={<VerifyPage />} />
-          <Route path="/" element={<HomePage />} />
+          <Route index element={<MainPage />} />
 
           {/* Public Routes */}
           <Route element={<PublicRoute />}>
