@@ -1,11 +1,13 @@
-import { loginUser } from "../../../lib/action";
+import { loginUser, checkUserStatus } from "../../lib/action";
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 function LoginPage() {
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
+  const location = useLocation(); 
+  const from = location.state?.from?.pathname || '/profile';
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -18,7 +20,15 @@ function LoginPage() {
     if (result.success) {
       setMessage('Login successful');
       setErrors({});
-      navigate('/');
+      const status = await checkUserStatus(idToken);
+      
+      if (!status.emailVerified) {
+        navigate('/confirm');
+      } else if (!status.hasProfile) {
+        navigate('/create-profile');
+      } else {
+        navigate(from);
+      }
 
     } else if (result.errors) {
       setErrors(result.errors);
@@ -74,4 +84,4 @@ function LoginPage() {
   )
 }
 
-export default LoginPage
+export default LoginPage;

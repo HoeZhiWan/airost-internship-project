@@ -1,57 +1,166 @@
+import { useState, useEffect } from "react";
 import areaCodes from "../../assets/CountryCodes.json"
+import { auth } from "../../../firebase-client";
+import { useNavigate } from "react-router-dom";
+import { setupProfile } from "../../lib/action";
 
 function SetupPage() {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [message, setMessage] = useState('');
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user) {
+        setUser(user);
+      } else {
+        navigate('/login');
+      }
+    });
+    return () => unsubscribe();
+  }, [navigate]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const fname = formData.get('fname');
+    const lname = formData.get('lname');
+    const areaCode = formData.get('areaCode');
+    const phoneNo = formData.get('phoneNo');
+
+    try {
+      setIsLoading(true);
+
+      const result = await setupProfile({user}, fname, lname, areaCode, phoneNo);
+      console.log(result);
+      if (result.success) {
+        setMessage(result.message);
+        setTimeout(() => {
+          navigate('/profile');
+        }, 3000);
+      } else if (result.errors) {
+        setErrors(result.errors)
+      } else if (result.error) {
+        setMessage(result.error.message)
+      }
+
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 1000);
+    }
+
+  }
+
   return (
     <div className="w-screen h-screen flex justify-center items-center bg-shade-500">
-      <div className="w-[380px] h-fit p-[30px] bg-shade-400 rounded-[10px]">
-        
-        <form className="mx-3 text-text text-[16px]">
-            <div className="text-[32px] font-bold text-primary-tint-300">Register Success!</div>
-            <div className="">Before you can start using the app, you need to enter some details.</div>
+      <div className="w-[400px] h-fit p-[30px] bg-shade-400 rounded-[10px]">
+
+        <form onSubmit={handleSubmit} className="mx-3 text-text text-[16px]">
+          <div className="text-[32px] font-bold text-primary-tint-300">Register Success!</div>
+          <div className="">Before you can start using the app, you need to enter some details.</div>
 
           <div className="flex flex-col">
-              <label className="mt-[32px] font-bold">Username</label>
-              <div className="flex">
-                <div className="flex flex-col me-[10px] basis-1/2">
-                    <input id="fname" name="fname" type="text" className="text-[12px] border-0 mt-[10px] px-[8px] py-[6px] w-full h-[30px] bg-shade-300 placeholder-text placeholder:italic rounded-[5px] focus:ring-0" placeholder="John" />
-                    <div className="text-[12px] mt-[2px]">First name</div>
-                </div>
-
-                <div className="flex flex-col basis-1/2">
-                    <input id="lname" name="lname" type="text" className="text-[12px] border-0 mt-[10px] px-[8px] py-[6px] w-full h-[30px] bg-shade-300 placeholder-text placeholder:italic rounded-[5px] focus:ring-0" placeholder="Doe" />
-                    <div className="self-end text-[12px] mt-[2px]">Last name</div>
-                </div>
+            <label className="mt-[32px] font-bold">Username</label>
+            <div className="flex gap-[10px]">
+              <div className="flex flex-col basis-1/2">
+                <input
+                  id="fname"
+                  name="fname"
+                  type="text"
+                  className="text-[12px] border-0 mt-[10px] px-[8px] py-[6px] w-full h-[30px] bg-shade-300 placeholder-text placeholder:italic rounded-[5px] focus:ring-0"
+                  placeholder="John"
+                />
+                <div className="text-[12px] mt-[2px]">First name</div>
+                {errors.fname && errors.fname.map((error) => (
+                  <p className="error mt-[4px] text-[14px] text-error italic" key={error}>
+                    ** {error}
+                  </p>
+                ))}
               </div>
-          </div>
 
-          <div className="flex flex-col">
-            <div className="flex flex-col">
-                <label className="mt-[32px] font-bold">Phone Number</label>
-                <div className="flex">
-                <div className="flex flex-col me-[10px] basis-1/3">
-                    <select id="areaCode" className="flex items-center text-[12px] border-0 mt-[10px] p-0 px-[8px] w-full h-[30px] bg-shade-300 rounded-[5px] focus:ring-0">
-                        <option value="Malaysia" selected>+60</option>
-                        {areaCodes.map((areaCode, id) => (
-                            <option value={areaCode.name} key={id}>{areaCode.dial_code}</option>
-                        ))}
-                    </select>
-                    <div className="text-[12px] mt-[2px]">Area code</div>
-                </div>
-
-                <div className="flex flex-col w-full">
-                    <input id="lname" name="lname" type="text" className="text-[12px] border-0 mt-[10px] px-[8px] py-[6px] w-full h-[30px] bg-shade-300 placeholder-text placeholder:italic rounded-[5px] focus:ring-0" placeholder="123456789" />
-                    <div className="self-end text-[12px] mt-[2px]">Phone Number</div>
-                </div>
+              <div className="flex flex-col basis-1/2">
+                <input
+                  id="lname"
+                  name="lname"
+                  type="text"
+                  className="text-[12px] border-0 mt-[10px] px-[8px] py-[6px] w-full h-[30px] bg-shade-300 placeholder-text placeholder:italic rounded-[5px] focus:ring-0"
+                  placeholder="Doe"
+                />
+                <div className="text-[12px] mt-[2px] text-right">Last name</div>
+                {errors.lname && errors.lname.map((error) => (
+                  <p className="error mt-[4px] text-[14px] text-error italic text-right" key={error}>
+                    ** {error}
+                  </p>
+                ))}
               </div>
             </div>
           </div>
 
-          <button href="#" className="flex justify-center mt-[32px] w-full h-fit py-[8px] bg-primary-tint-300 text-white rounded-[5px] fs-6 duration-200">Confirm</button>
-          
+          <div className="flex flex-col">
+            <label className="mt-[32px] font-bold">Phone Number</label>
+            <div className="flex gap-[10px]">
+              <div className="flex flex-col basis-1/3">
+                <select id="areaCode" name="areaCode" defaultValue="+60" className="flex items-center text-[12px] border-0 mt-[10px] p-0 px-[8px] w-full h-[30px] bg-shade-300 rounded-[5px] focus:ring-0">
+                  {areaCodes
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((areaCode) => (
+                      <option
+                        value={areaCode.dial_code}
+                        key={areaCode.code}
+                      >
+                        {areaCode.code} ({areaCode.dial_code})
+                      </option>
+                    ))}
+                </select>
+                <div className="text-[12px] mt-[2px]">Area code</div>
+                {errors.areaCode && errors.areaCode.map((error) => (
+                  <p className="error mt-[4px] text-[14px] text-error italic" key={error}>
+                    ** {error}
+                  </p>
+                ))}
+              </div>
+
+              <div className="flex flex-col basis-3/4">
+                <input
+                  id="phoneNo"
+                  name="phoneNo"
+                  type="tel"
+                  pattern="[0-9]*"
+                  onChange={(e) => {
+                    e.target.value = e.target.value.replace(/\D/g, '');
+                  }}
+                  className="text-[12px] border-0 mt-[10px] px-[8px] py-[6px] w-full h-[30px] bg-shade-300 placeholder-text placeholder:italic rounded-[5px] focus:ring-0"
+                  placeholder="123456789"
+                />
+                <div className="text-[12px] mt-[2px] text-right">Phone number</div>
+                {errors.phoneNo && errors.phoneNo.map((error) => (
+                  <p className="error mt-[4px] text-[14px] text-error italic text-right" key={error}>
+                    ** {error}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <button
+            disabled={isLoading}
+            className={`
+          flex justify-center mt-[32px] w-full h-fit py-[8px] bg-primary-tint-300 text-white rounded-[5px] fs-6 duration-200
+          ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-tint-400'}
+          `}>
+            {isLoading ? "Submitting" : "Confirm"}
+          </button>
+
+          {message && <p>{message}</p>}
         </form>
-      </div>
-    </div>
+      </div >
+    </div >
   )
 }
 
-export default SetupPage
+export default SetupPage;

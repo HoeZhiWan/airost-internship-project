@@ -1,0 +1,5 @@
+{
+    "watch": ["server.ts"],
+    "exec": "ts-node --require dotenv/config --project tsconfig.server.json server.ts dotenv_config_path=.env.local",
+    "ext": "js ts"
+}

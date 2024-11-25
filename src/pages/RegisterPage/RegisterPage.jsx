@@ -1,11 +1,21 @@
-import { registerUser } from "../../../lib/action";
-import { useState } from 'react';
+import { registerUser } from "../../lib/action";
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { auth } from "../../../firebase-client";
 
 function RegisterPage() {
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => { 
+    const unsubscribe = auth.onAuthStateChanged(user => { 
+      if (user) { 
+        navigate('/confirm'); 
+      } 
+    });
+     return () => unsubscribe();
+  }, [navigate]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -19,7 +29,6 @@ function RegisterPage() {
     if (result.success) {
       setMessage('Registration successful');
       setErrors({});
-      navigate('/confirm');
 
     } else if (result.errors) {
       setErrors(result.errors);
@@ -66,7 +75,7 @@ function RegisterPage() {
                     </p>
                 ))}
               </div>
-            <a className="self-start basis-1/2 text-[12px] italic" href="">Have an account? Click here!</a>
+            <a className="self-start basis-1/2 text-[12px] italic" href="/login">Have an account? Click here!</a>
             </div>
           </div>
 
@@ -83,4 +92,4 @@ function RegisterPage() {
   )
 }
 
-export default RegisterPage
+export default RegisterPage;
