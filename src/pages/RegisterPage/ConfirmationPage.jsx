@@ -2,36 +2,54 @@ import { useState, useEffect } from "react";
 import { auth } from "../../../firebase-client"
 import { emailVerification } from "../../lib/action";
 import { useNavigate } from "react-router-dom";
+import { useAuthState } from 'react-firebase-hooks/auth';
+import LoadingScreen from "../../components/LoadingScreen";
 
 function ConfirmationPage() {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [user, loading] = useAuthState(auth);
+  const [isSending, setIsSending] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => { 
-    const unsubscribe = auth.onAuthStateChanged(user => { 
-      if (user) { 
-        setUser(user); 
-      } else { 
-        navigate('/login'); 
-      } }); 
-      return () => unsubscribe(); 
-  }, [navigate]);
+  console.log('Component mounted');
+  console.log('Auth state:', { user, loading });
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        console.log('No user, redirecting to login');
+        navigate('/login');
+      } else if (user.emailVerified) {
+        console.log('Email verified, redirecting to profile');
+        navigate('/profile');
+      }
+    }
+  }, [user, loading, navigate]);
 
   const handleVerifyEmail = async (event) => {
     event.preventDefault();
+    if (!user) return;
 
     try {
-      setIsLoading(true);
+      setIsSending(true);
       await emailVerification({ user });
+      // Refresh the user to check if email is verified
+      await user.reload();
     } catch(error) {
-      throw new Error('Failed to send verifcation email. Please try logging in.');
+      console.error('Failed to send verification email:', error);
     } finally {
-      setIsLoading(false);
+      setIsSending(false);
     }
   }
 
-  return user ? (
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  return (
     <div className="w-screen h-screen flex justify-center items-center bg-shade-500">
       <div className="w-fit h-fit p-[30px] bg-shade-400 rounded-[10px]">
         <form className="mx-3 text-text text-[16px] text-center">
@@ -40,22 +58,26 @@ function ConfirmationPage() {
             <div className="text-[16px] mt-8 max-w-[380px]">We sent an email to:</div>
             <div>{user.email}</div>
           </div>
-          <div className="mt-[32px] max-w-[480px]">Just click on the link in that email to complete your signup. If you don’t see it, you may need to check your spam folder.</div>
+          <div className="mt-[32px] max-w-[480px]">Just click on the link in that email to complete your signup. If you don't see it, you may need to check your spam folder.</div>
           <div className="mt-[32px] max-w-[480px]">Still can't find the email? No problem.</div>
           <button 
           onClick={handleVerifyEmail} 
-          disabled={isLoading}
+          disabled={isSending}
           className={`
             flex justify-center mt-8 w-full h-fit py-[8px] bg-primary-tint-300 text-white rounded-[5px] fs-6 duration-200
-            ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-tint-400'}
+            ${isSending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary-tint-400'}
           `}
           >
-            {isLoading ? "Sending..." : "Resend Verification Email"}
+            {isSending ? (
+              <>
+                <span className="animate-spin">⌛</span>
+                Sending...
+              </> ) : ( "Resend Verification Email" )}
           </button>
         </form>
       </div>
     </div>
-  ) : null;
+  );
 }
-  
+
 export default ConfirmationPage;

@@ -33,20 +33,8 @@ const ProtectedRoute = () => {
     return <LoadingScreen />;
   }
 
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  if (!userStatus) {
-    return <LoadingScreen />;
-  }
-  
-  if (!userStatus.emailVerified) {
-    return <Navigate to="/confirm" replace />;
-  }
-
-  if (!userStatus.hasProfile && location.pathname !== '/setup-profile') {
-    return <Navigate to="/setup-profile" replace />;
+  if (!user || !userStatus?.emailVerified || !userStatus?.hasProfile) {
+    return <Navigate to="/login" replace />;
   }
 
   return <Outlet context={{ user, userStatus }} />;

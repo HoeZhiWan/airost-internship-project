@@ -11,6 +11,7 @@ const PublicRoute = () => {
   const [userStatus, setUserStatus] = useState(null);
   const [checkingStatus, setCheckingStatus] = useState(true);
   const location = useLocation();
+  const path = location.pathname;
 
   useEffect(() => {
     async function fetchUserStatus() {
@@ -18,7 +19,6 @@ const PublicRoute = () => {
         try {
           const idToken = await auth.currentUser?.getIdToken();
           const status = await checkUserStatus(idToken);
-          setUserStatus(status);
           setUserStatus(status);
         } catch (error) {
           console.error('Error checking status:', error);
@@ -34,22 +34,22 @@ const PublicRoute = () => {
     return <LoadingScreen />;
   }
 
-  console.log(userStatus);
-
+  // If user is authenticated, handle redirections
   if (user && userStatus) {
+    const isAuthPath = path === '/login' || path === '/register';
+    
     if (!userStatus.emailVerified) {
-      return <Navigate to="/confirm" />;
+      return isAuthPath ? <Navigate to="/confirm" replace /> : <Outlet />;
     }
-
-    if (!userStatus.hasProfile && location.pathname !== '/setup-profile') {
-      return <Navigate to="/setup-profile" />;
+    
+    if (!userStatus.hasProfile) {
+      return (path !== '/setup-profile') ? <Navigate to="/setup-profile" replace /> : <Outlet />;
     }
-
-    if (userStatus.emailVerified && userStatus.hasProfile) {
-      return <Navigate to="/profile" />;
-    }
+    
+    return <Navigate to="/profile" replace />;
   }
 
+  // Allow access to public routes for non-authenticated users
   return <Outlet />;
 };
 

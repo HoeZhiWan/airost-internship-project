@@ -65,6 +65,7 @@ const ProfilePage = () => {
       >
         Sign Out
       </button>
+
     </div>
   );
 };
