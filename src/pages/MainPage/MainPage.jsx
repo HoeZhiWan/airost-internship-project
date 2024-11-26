@@ -1,5 +1,6 @@
 import { useEffect } from "react"
 import { useSearchParams } from "react-router-dom"
+import ChatTab from "../../components/Chat/ChatTab"
 
 function NavBar({groupName, activeTab, setActiveTab, showMember, setShowMember}) {
   return (
@@ -58,7 +59,7 @@ function MainPage() {
   const renderView = () => {
     switch (activeTab) {
       case "chat":
-        return "chat"
+        return <ChatTab />
       
       case "file":
         return "file"
@@ -86,15 +87,13 @@ function MainPage() {
       </div>
       <div className="basis-3/4 bg-shade-400">
         <NavBar groupName="Group Name" activeTab={activeTab} setActiveTab={setActiveTab} showMember={showMember} setShowMember={setShowMember} />
-        <div className="flex flex-row justify-between">
-          <div className="">
-            {renderView()}
-          </div>
+        <div className="flex flex-row h-[671px]">
+          {renderView()}
           {showMember &&
-            <div className="w-[227px] h-[671px] bg-shade-500">
+            <div className="basis-1/3 bg-shade-500">
               Hello
             </div>
-        }
+          }
         </div>
       </div>
     </div>
