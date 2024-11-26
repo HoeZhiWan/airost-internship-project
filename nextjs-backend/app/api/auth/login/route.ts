@@ -10,12 +10,16 @@ export async function POST(req: NextRequest, res:NextResponse) {
       // Verify the ID token
       const decodedToken = await adminAuth.verifyIdToken(idToken);
 
-      // Add user to Firestore
-      await db.collection('users').doc(decodedToken.uid).set({
+      // Get user document from Firestore
+      const userDoc = await db.collection('users').doc(decodedToken.uid).get();
+      const userData = userDoc.data();
+
+      // Update last login
+      await db.collection('users').doc(decodedToken.uid).update({
         lastLogin: new Date(),
       });
 
-      const response = JSON.stringify({ message: 'User data updated successfully' })
+      const response = JSON.stringify({ message: 'User data updated successfully'});
 
       return new NextResponse(response, {status:200});
     } catch (error) {

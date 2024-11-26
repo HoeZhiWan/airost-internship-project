@@ -2,7 +2,6 @@ import { adminAuth, adminFirestore } from "@/firebase-server";
 import { Timestamp } from "firebase-admin/firestore";
 import { NextRequest, NextResponse } from "next/server";
 
-
 const db = adminFirestore;
 
 export async function POST(req: NextRequest, res:NextResponse) {
@@ -14,12 +13,17 @@ export async function POST(req: NextRequest, res:NextResponse) {
 
     try {
       const doc = await db.collection('emailVerification').doc(oobCode).get();
-      
       if (!doc.exists) {
           return new NextResponse(JSON.stringify({error: "Invalid/Expired Code"}), {status:400});
       } 
       
-      const { email, uid, createdAt, expiryDuration } = doc.data();
+      const data = doc.data();
+      if (!data) {
+        return new NextResponse(JSON.stringify({error: "Invalid/Expired Code"}), {status:400});
+      }
+
+      const { email, uid, createdAt, expiryDuration } = data;
+      
       const currentTime = Timestamp.now().toMillis();
       const expiryTime = createdAt.toMillis() + expiryDuration;
       
@@ -28,9 +32,13 @@ export async function POST(req: NextRequest, res:NextResponse) {
         return new NextResponse(JSON.stringify({error: "Code has expired"}), {status:400});
       }
 
-      adminAuth.updateUser(uid, { emailVerified: true })
-      await db.collection('emailVerification').doc(oobCode).delete(); // Optionally delete the document after successful verification
+      await adminAuth.updateUser(uid, { 
+        emailVerified: true })
+      await db.collection('users').doc(uid).update({
+        emailVerified: true
+      });
 
+      await db.collection('emailVerification').doc(oobCode).delete();
       
       return new NextResponse(JSON.stringify({message: `Email ${email} successfully verified`}), {status:200});
     } catch (error) {

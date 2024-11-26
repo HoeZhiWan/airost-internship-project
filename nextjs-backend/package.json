@@ -3,32 +3,37 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "nodemon",
+    "build": "next build && tsc --project tsconfig.server.json",
+    "start": "cross-env NODE_ENV=production node dist/server.js"
   },
   "dependencies": {
+    "@types/express": "^5.0.0",
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^6.4.16",
     "cors": "^2.8.5",
+    "express": "^4.21.1",
     "firebase": "^11.0.1",
     "firebase-admin": "^12.7.0",
     "next": "15.0.3",
     "next-firebase-auth-edge": "^1.8.2",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.16",
+    "nodemon": "^3.1.7",
     "react": "19.0.0-rc-66855b96-20241106",
     "react-dom": "19.0.0-rc-66855b96-20241106",
     "uuid": "^11.0.3"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
-    "@types/node": "^20",
+    "@types/node": "^20.17.7",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.4.5",
     "eslint": "^8",
     "eslint-config-next": "15.0.3",
-    "typescript": "^5"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
   }
 }
