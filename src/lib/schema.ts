@@ -56,26 +56,26 @@ export const resetPasswordSchema = z.object({
 });
 
 export const setupProfileSchema = z.object({
-    fname: z.string().min(1, {
-        message: 'First name is required.'
-    }),
-    lname: z.string().min(1, {
-        message: 'Last name is required.'
-    }),
-    phoneNo: z.string()
-        .min(1, { message: 'Phone number is required.' }),
-    areaCode: z.string()
-        .min(1, { message: 'Area code is required.' })
+  fname: z.string()
+    .min(1, { message: 'First name is required.' })
+    .regex(/^[A-Za-z]+$/, { message: 'First name must contain only letters' }),
+  lname: z.string()
+    .min(1, { message: 'Last name is required.' })
+    .regex(/^[A-Za-z]+$/, { message: 'Last name must contain only letters' }),
+  phoneNo: z.string()
+    .min(1, { message: 'Phone number is required.' }),
+  areaCode: z.string()
+    .min(1, { message: 'Area code is required.' })
 }).refine((data) => {
-    try {
-        // Combine area code and phone number for validation
-        const fullNumber = `${data.areaCode}${data.phoneNo}`;
-        const phoneNumber = parsePhoneNumberWithError(fullNumber);
-        return phoneNumber.isValid();
-    } catch {
-        return false;
-    }
+  try {
+    // Combine area code and phone number for validation
+    const fullNumber = `${data.areaCode}${data.phoneNo}`;
+    const phoneNumber = parsePhoneNumberWithError(fullNumber);
+    return phoneNumber.isValid();
+  } catch {
+    return false;
+  }
 }, {
-    message: "Invalid phone number for this country code",
-    path: ["phoneNo"]
+  message: "Invalid phone number for this country code",
+  path: ["phoneNo"]
 });
