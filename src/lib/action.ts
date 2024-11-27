@@ -100,7 +100,7 @@ export const loginUser = async (email: string, password: string) => {
     const data = await response.json();
     console.log('User log ined and data sent to API', data);
 
-    return { success: true, message: data.message };
+    return { success: true, message: data.message, idToken};
 
   } catch (error) {
     // Extract error code 

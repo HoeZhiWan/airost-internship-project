@@ -1,6 +1,9 @@
-import { useEffect } from "react"
-import { useSearchParams } from "react-router-dom"
-import ChatTab from "../../components/Chat/ChatTab"
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { getGroups, createGroup } from "../../lib/chat";
+import ChatTab from "../../components/Chat/ChatTab";
+import LoadingScreen from "../../components/LoadingScreen";
+import { useAuth } from '../../contexts/AuthContext';
 
 function NavBar({groupName, activeTab, setActiveTab, showMember, setShowMember}) {
   return (
@@ -42,9 +45,14 @@ function NavBar({groupName, activeTab, setActiveTab, showMember, setShowMember})
 }
 
 function MainPage() {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [groups, setGroups] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
   const activeTab = searchParams.get("tab") || "chat"
   const showMember = searchParams.get("member") === "true" || false
+  const [newGroupName, setNewGroupName] = useState("");
 
   const setActiveTab = (tab) => {
     searchParams.set("tab", tab)
@@ -56,10 +64,52 @@ function MainPage() {
     setSearchParams(searchParams)
   }
 
+  const handleCreateGroup = async (e) => {
+    e.preventDefault();
+    if (!newGroupName.trim() || !user) return;
+
+    const idToken = await user.getIdToken();
+    const result = await createGroup(newGroupName, idToken);
+    
+    if (result.success) {
+      setNewGroupName("");
+      // Refresh groups list
+      const updatedGroups = await getGroups(idToken);
+      if (updatedGroups.success) {
+        setGroups(updatedGroups.groups);
+      }
+    }
+  };
+
+  useEffect(() => {
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      if (!user) return;
+      
+      const idToken = await user.getIdToken();
+      const result = await getGroups(idToken);
+      if (result.success) {
+        setGroups(result.groups);
+      }
+    };
+
+    fetchGroups();
+  }, [user]);
+
+  useEffect(() => {
+    console.log(activeTab)
+  }, [activeTab]);
+
   const renderView = () => {
     switch (activeTab) {
       case "chat":
-        return <ChatTab />
+        if (selectedGroup)
+          return <ChatTab groupId={selectedGroup?.id} />;
+        else 
+          return <h1>Select a group</h1>;
       
       case "file":
         return "file"
@@ -72,21 +122,45 @@ function MainPage() {
     }
   }
 
-  useEffect(() => {
-    console.log(activeTab)
-  }, [activeTab])
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <div className="flex h-screen text-[16px] text-text">
-      <div className="basis-1/4 bg-shade-500">
+      <div className="basis-1/4 bg-shade-500 flex flex-col">
         <div className="flex items-center text-[24px] font-bold h-16 px-[23px] py-[9px] border-b-[3px] border-[rgba(0,0,0,0.25)]">
           Chats
         </div>
-        <div className="h-16">
-          2
+        <div className="overflow-y-auto flex-grow">
+          {groups.map(group => (
+            <div 
+              key={group.id}
+              className={`p-4 cursor-pointer hover:bg-shade-400 ${selectedGroup?.id === group.id ? 'bg-shade-400' : ''}`}
+              onClick={() => setSelectedGroup(group)}
+            >
+              {group.name}
+            </div>
+          ))}
         </div>
+        <form onSubmit={handleCreateGroup} className="p-4 border-t-2 border-shade-400">
+          <input
+            type="text"
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+            placeholder="New group name"
+            className="w-full px-3 py-2 bg-shade-300 rounded-md"
+          />
+        </form>
       </div>
       <div className="basis-3/4 bg-shade-400">
-        <NavBar groupName="Group Name" activeTab={activeTab} setActiveTab={setActiveTab} showMember={showMember} setShowMember={setShowMember} />
+        <NavBar 
+          groupName={selectedGroup ? selectedGroup.name : "Select a group"} 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          showMember={showMember} 
+          setShowMember={setShowMember} 
+        />
         <div className="flex flex-row h-[671px]">
           {renderView()}
           {showMember &&
@@ -100,4 +174,4 @@ function MainPage() {
   )
 }
 
-export default MainPage
+export default MainPage;

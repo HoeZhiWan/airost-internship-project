@@ -14,17 +14,15 @@ app.prepare().then(() => {
     console.error('Cleanup error:', error)
   })
 
-  createServer((req, res) => {
+  const server = createServer((req, res) => {
     const parsedUrl = parse(req.url!, true)
     handle(req, res, parsedUrl)
-  }).listen(port)
+  });
 
-  console.log(
-    `> Server listening at http://localhost:${port} as ${
-      dev ? 'development' : process.env.NODE_ENV
-    }`
-  )
+  server.listen(port, () => {
+    console.log(`> Server listening at http://localhost:${port}`);
+  });
 }).catch(error => {
   console.error('Failed to start server:', error)
   process.exit(1)
-})
+});

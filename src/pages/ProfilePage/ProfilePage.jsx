@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { userSignOut, getProfileInfo } from '../../lib/action';
 import LoadingScreen from '../../components/LoadingScreen';
+import { useAuth } from '../../contexts/AuthContext';
 
 const ProfilePage = () => {
-  const { user, userStatus } = useOutletContext();
+  const { user, userStatus } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
