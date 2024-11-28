@@ -4,6 +4,7 @@ import { getGroups, createGroup } from "../../lib/chat";
 import ChatTab from "../../components/Chat/ChatTab";
 import LoadingScreen from "../../components/LoadingScreen";
 import { useAuth } from '../../contexts/AuthContext';
+import TodoTab from "../../components/Todo/TodoTab";
 
 function NavBar({groupName, activeTab, setActiveTab, showMember, setShowMember}) {
   return (
@@ -115,7 +116,7 @@ function MainPage() {
         return "file"
 
       case "todo":
-        return "todo"
+        return <TodoTab />
 
       default:
         return "chat"
