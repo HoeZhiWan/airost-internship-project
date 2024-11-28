@@ -22,7 +22,7 @@ function LoginPage() {
       if (result.success) {
         setMessage('Login successful');
         setErrors({});
-        const status = await checkUserStatus(idToken);
+        const status = await checkUserStatus(result.idToken);
         
         if (!status.emailVerified) {
           navigate('/confirm');

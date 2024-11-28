@@ -1,43 +1,30 @@
-// ProtectedRoute.jsx
-import React, { useEffect, useState } from 'react';
-import { Navigate, useLocation, Outlet } from 'react-router-dom';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '../../firebase-client';
-import { checkUserStatus } from '../lib/action';
+import React from 'react';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import LoadingScreen from './LoadingScreen';
 
 const ProtectedRoute = () => {
-  const [user, loading] = useAuthState(auth);
-  const [userStatus, setUserStatus] = useState(null);
-  const [checkingStatus, setCheckingStatus] = useState(true);
+  const { user, userStatus } = useAuth();
   const location = useLocation();
 
-  useEffect(() => {
-    async function fetchUserStatus() {
-      if (user) {
-        try {
-          const idToken = await auth.currentUser?.getIdToken();
-          const status = await checkUserStatus(idToken);
-          setUserStatus(status);
-        } catch (error) {
-          console.error('Error checking status:', error);
-        }
-      }
-      setCheckingStatus(false);
-    }
-
-    fetchUserStatus();
-  }, [user]);
-
-  if (loading || checkingStatus) {
+  if (user && userStatus === null) {
     return <LoadingScreen />;
   }
 
-  if (!user || !userStatus?.emailVerified || !userStatus?.hasProfile) {
-    return <Navigate to="/login" replace />;
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return <Outlet context={{ user, userStatus }} />;
+  if (userStatus) {
+    if (!userStatus.emailVerified) {
+      return <Navigate to="/confirm" replace />;
+    }
+    if (!userStatus.hasProfile) {
+      return <Navigate to="/setup-profile" replace />;
+    }
+  }
+
+  return <Outlet />;
 };
 
 export default ProtectedRoute;
