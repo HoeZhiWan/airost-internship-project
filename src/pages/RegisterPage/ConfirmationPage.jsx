@@ -58,8 +58,8 @@ function ConfirmationPage() {
             <div className="text-[16px] mt-8 max-w-[380px]">We sent an email to:</div>
             <div>{user.email}</div>
           </div>
-          <div className="mt-[32px] max-w-[480px]">Just click on the link in that email to complete your signup. If you don't see it, you may need to check your spam folder.</div>
-          <div className="mt-[32px] max-w-[480px]">Still can't find the email? No problem.</div>
+          <div className="mt-[32px] max-w-[480px]">Just click on the link in that email to complete your signup. If you don&apos;t see it, you may need to check your spam folder.</div>
+          <div className="mt-[32px] max-w-[480px]">Still can&apos;t find the email? No problem.</div>
           <button 
           onClick={handleVerifyEmail} 
           disabled={isSending}
