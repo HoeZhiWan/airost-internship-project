@@ -1,67 +1,122 @@
+import { useState, useEffect } from "react"
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd"
+import { useAuth } from '../../contexts/AuthContext'
+import { sendTodo, getTodos, updateTodoStatus } from "../../lib/chat"
 import PillCounter from "./PillCounter"
 import TodoField from "./TodoField"
-import { useState } from "react"
 
-//test data
-const pending = [
-    {
-      id: "1",
-      name: "Chop"
-    },
-    {
-      id: "2",
-      name: "rinse"
-    },
-    {
-      id: "3",
-      name: "cook"
-    },
-  ]
-  const process = [
-    {
-        id: "4",
-        name: "wash"
-      },
-  ]
-  const completed = []
+function TodoTab({ groupId }) {
+    const [list, setList] = useState({ "pending": [], "process": [], "completed": [] })
+    const [newTodo, setNewTodo] = useState("")
+    const { user } = useAuth()
 
-function TodoTab() {
-    const [list, setList] = useState({"pending": pending, "process": process, "completed": completed}) //combine all list into one class
+    // Add fetchTodos function outside useEffect for reuse
+    const fetchTodos = async () => {
+        if (!groupId || !user) return;
+        
+        const idToken = await user.getIdToken();
+        const result = await getTodos(groupId, idToken);
+        
+        if (result.success) {
+            const organized = {
+                pending: [],
+                process: [],
+                completed: []
+            };
+            
+            result.todos.forEach(todo => {
+                organized[todo.status].push({
+                    id: todo.id,
+                    name: todo.text
+                });
+            });
+            
+            setList(organized);
+        }
+    };
 
-    const handleDragEnd = (e) => {
+    // Initial fetch
+    useEffect(() => {
+        fetchTodos();
+    }, [groupId, user]);
+
+    // Set up polling
+    useEffect(() => {
+        const interval = setInterval(() => {
+            fetchTodos();
+        }, 5000); // 5 seconds
+
+        // Cleanup on unmount
+        return () => clearInterval(interval);
+    }, [groupId, user]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        if (!newTodo.trim() || !user || !groupId) return
+    
+        const idToken = await user.getIdToken()
+        const result = await sendTodo(newTodo, groupId, idToken)
+        
+        if (result.success) {
+          // Add new todo to pending list
+          setList(prev => ({
+            ...prev,
+            pending: [...prev.pending, {
+              id: Date.now().toString(), // temporary ID
+              name: newTodo
+            }]
+          }))
+          setNewTodo("")
+        }
+      }
+
+    const handleDragEnd = async (e) => {
+        if (!e.destination) return;
+
         const newClass = {...list}
-
         const destinationId = e.destination.droppableId
-        const destinationIndex = e.source.index
+        const destinationIndex = e.destination.index
         const sourceId = e.source.droppableId
         const sourceIndex = e.source.index
 
-        console.log(newClass[sourceId])
-        const [newList] = newClass[sourceId].splice(sourceIndex, 1)
-        newClass[destinationId].splice(destinationIndex, 0, newList)
-        console.log(newClass)
+        // Remove from source and add to destination
+        const [movedItem] = newClass[sourceId].splice(sourceIndex, 1)
+        newClass[destinationId].splice(destinationIndex, 0, movedItem)
 
-        //update data in here
-        return setList(newClass)
+        // Update state optimistically
+        setList(newClass)
+
+        // Update in backend
+        if (sourceId !== destinationId) {
+            const idToken = await user.getIdToken()
+            const result = await updateTodoStatus(movedItem.id, destinationId, idToken)
+            
+            if (!result.success) {
+                // Revert changes if update fails
+                const revertedList = {...list}
+                const [revertItem] = revertedList[destinationId].splice(destinationIndex, 1)
+                revertedList[sourceId].splice(sourceIndex, 0, revertItem)
+                setList(revertedList)
+            }
+        }
     }
 
     return (
         <div className="flex flex-col gap-4 w-full m-4">
-            <form className="flex h-12 gap-4 w-full text-[20px]">
+            <form onSubmit={handleSubmit} className="flex h-12 gap-4 w-full text-[20px]">
                     <input 
                         type="text" 
+                        value={newTodo}
+                        onChange={(e) => setNewTodo(e.target.value)}
                         className="border-0 w-full p-[12px] py-[8px] bg-shade-300 placeholder-text placeholder:italic rounded-[10px] focus:ring-0" 
-                        placeholder="search" 
+                        placeholder="Add new todo" 
                     />
-                <select className="w-[160px] p-3 bg-primary-tint-300 rounded-[10px]">
-                    <option value="" className="bg-white text-black">
-                        All
-                    </option>
-                    <option value="" className="bg-white text-black">
-                        My Todo
-                    </option>
-                </select>
+                <button 
+                    type="submit"
+                    className="w-[160px] p-3 bg-primary-tint-300 rounded-[10px]"
+                >
+                    Add Todo
+                </button>
             </form>
 
             <DragDropContext onDragEnd={handleDragEnd}>

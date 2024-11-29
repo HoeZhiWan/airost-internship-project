@@ -115,6 +115,7 @@ function MainPage() {
   const [loading, setLoading] = useState(true);
   const activeTab = searchParams.get("tab") || "chat"
   const showMember = searchParams.get("member") === "true" || false
+  const groupId = searchParams.get("group")
   const [newGroupName, setNewGroupName] = useState("");
 
   const setActiveTab = (tab) => {
@@ -144,6 +145,12 @@ function MainPage() {
     }
   };
 
+  const handleGroupSelect = (group) => {
+    setSelectedGroup(group);
+    searchParams.set("group", group.id);
+    setSearchParams(searchParams);
+  };
+
   useEffect(() => {
     setLoading(false);
   }, []);
@@ -156,11 +163,18 @@ function MainPage() {
       const result = await getGroups(idToken);
       if (result.success) {
         setGroups(result.groups);
+        // If there's a group ID in URL, select that group
+        if (groupId) {
+          const group = result.groups.find(g => g.id === groupId);
+          if (group) {
+            setSelectedGroup(group);
+          }
+        }
       }
     };
 
     fetchGroups();
-  }, [user]);
+  }, [user, groupId]);
 
   useEffect(() => {
     console.log(activeTab)
@@ -178,7 +192,10 @@ function MainPage() {
         return "file"
 
       case "todo":
-        return <TodoTab />
+        if (selectedGroup)
+          return <TodoTab groupId={selectedGroup?.id} />;
+        else
+          return <h1>Select a group</h1>;
 
       default:
         return "chat"
@@ -200,7 +217,7 @@ function MainPage() {
             <div 
               key={group.id}
               className={`p-4 cursor-pointer hover:bg-shade-400 ${selectedGroup?.id === group.id ? 'bg-shade-400' : ''}`}
-              onClick={() => setSelectedGroup(group)}
+              onClick={() => handleGroupSelect(group)}
             >
               {group.name}
             </div>
