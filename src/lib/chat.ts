@@ -4,22 +4,25 @@ export interface ChatMessage {
   userId: string;
   groupId: string;
   timestamp: Date;
+  fileId?: string;
+  fileName?: string;
+  fileUrl?: string;
+  fileType?: string;
 }
 
-export const sendMessage = async (text: string | null, userId: string, groupId: string, idToken: string, formData?: FormData) => {
+export const sendMessage = async (text: string | null, userId: string, groupId: string, idToken: string, fileMetadata?: any) => {
   try {
     let endpoint = 'http://localhost:3000/api/chat/send';
-    let body;
     let headers: HeadersInit = {
-      'Authorization': `Bearer ${idToken}`
+      'Authorization': `Bearer ${idToken}`,
+      'Content-Type': 'application/json'
     };
 
-    if (formData) {
-      body = formData;
-    } else {
-      headers['Content-Type'] = 'application/json';
-      body = JSON.stringify({ text, groupId });
-    }
+    const body = JSON.stringify({
+      text,
+      groupId,
+      fileMetadata
+    });
 
     const apiResponse = await fetch(endpoint, {
       method: 'POST',
@@ -28,11 +31,13 @@ export const sendMessage = async (text: string | null, userId: string, groupId: 
     });
 
     if (!apiResponse.ok) {
-      throw new Error('API request failed');
+      const error = await apiResponse.json();
+      throw new Error(error.error || 'API request failed');
     }
 
-    return { success: true };
+    return await apiResponse.json();
   } catch (error) {
+    console.error('Error sending message:', error);
     return { success: false, error };
   }
 };

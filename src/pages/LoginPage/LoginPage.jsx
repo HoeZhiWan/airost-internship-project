@@ -8,7 +8,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation(); 
-  const from = location.state?.from?.pathname || '/profile';
+  const from = location.state?.from?.pathname || '/';
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -27,7 +27,7 @@ function LoginPage() {
         if (!status.emailVerified) {
           navigate('/confirm');
         } else if (!status.hasProfile) {
-          navigate('/create-profile');
+          navigate('/setup-profile');
         } else {
           navigate(from);
         }

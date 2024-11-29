@@ -1,10 +1,9 @@
 import { adminAuth, adminFirestore } from "@/firebase-server";
 import { Timestamp } from "firebase-admin/firestore";
 import { NextRequest, NextResponse } from "next/server";
-import { UTApi } from "uploadthing/server";
+import { uploadFile } from '@/lib/uploadUtils';
 
 const db = adminFirestore;
-const utapi = new UTApi();
 
 export async function POST(req: NextRequest) {
     try {
@@ -19,44 +18,51 @@ export async function POST(req: NextRequest) {
         let messageData: any;
         let fileMetadata: any;
         
-        if (req.headers.get('content-type')?.includes('multipart/form-data')) {
+        const contentType = req.headers.get('content-type') || '';
+        
+        if (contentType.includes('multipart/form-data')) {
             const formData = await req.formData();
             const file = formData.get('file') as File;
             const groupId = formData.get('groupId') as string;
 
-            const uploadResponse = await utapi.uploadFiles(file);
-            const fileData = Array.isArray(uploadResponse) ? uploadResponse[0] : uploadResponse;
-
-            // Create file metadata
-            fileMetadata = {
-                fileName: file.name,
-                fileType: file.type,
-                fileSize: file.size,
-                uploadedBy: decodedToken.uid,
-                uploadedAt: Timestamp.now(),
-                fileUrl: fileData.data.url,
-                key: fileData.data.key,
-                groupId
-            };
-
-            // Store in files collection
-            const fileDoc = await db.collection('files').add(fileMetadata);
+            fileMetadata = await uploadFile(file, decodedToken.uid, groupId);
 
             messageData = {
                 userId: decodedToken.uid,
                 groupId,
-                fileId: fileDoc.id,  // Reference to the file document
-                ...fileMetadata,  // Include file info in message for easy access
+                fileId: fileMetadata.id,
+                fileName: fileMetadata.fileName,
+                fileUrl: fileMetadata.fileUrl,
+                fileType: fileMetadata.fileType,
                 timestamp: Timestamp.now()
             };
+        } else if (contentType.includes('application/json')) {
+            const { text, groupId, fileMetadata: existingFileMetadata } = await req.json();
+            
+            if (existingFileMetadata) {
+                messageData = {
+                    userId: decodedToken.uid,
+                    groupId,
+                    fileId: existingFileMetadata.id,
+                    fileName: existingFileMetadata.fileName,
+                    fileUrl: existingFileMetadata.fileUrl,
+                    fileType: existingFileMetadata.fileType,
+                    timestamp: Timestamp.now()
+                };
+                fileMetadata = existingFileMetadata;
+            } else {
+                messageData = {
+                    text,
+                    userId: decodedToken.uid,
+                    groupId,
+                    timestamp: Timestamp.now()
+                };
+            }
         } else {
-            const { text, groupId } = await req.json();
-            messageData = {
-                text,
-                userId: decodedToken.uid,
-                groupId,
-                timestamp: Timestamp.now()
-            };
+            return NextResponse.json(
+                { error: 'Invalid content type' }, 
+                { status: 400 }
+            );
         }
 
         // Get user info
@@ -89,7 +95,7 @@ export async function POST(req: NextRequest) {
         // Store message in Firestore
         const messageRef = await db.collection('messages').add({
             ...messageData,
-            userName // Add the userName to the message data
+            userName 
         });
         
         return NextResponse.json({ 

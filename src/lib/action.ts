@@ -302,3 +302,27 @@ export const getProfileInfo = async (idToken: string) => {
     return { success: false, message: 'An error occurred while fetching profile info' };
   }
 };
+
+export const updateProfilePicture = async (idToken: string, file: File) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('http://localhost:3000/api/profile/update-picture', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${idToken}`
+      },
+      body: formData
+    });
+
+    const result = await response.json();
+    if (response.ok) {
+      return { success: true, profilePictureUrl: result.profilePictureUrl };
+    } else {
+      return { success: false, message: result.error };
+    }
+  } catch (error) {
+    return { success: false, message: 'An error occurred while updating profile picture' };
+  }
+};

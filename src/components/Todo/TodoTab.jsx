@@ -1,70 +1,100 @@
 import { useState, useEffect } from "react"
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd"
 import { useAuth } from '../../contexts/AuthContext'
-import { sendTodo, getTodos, updateTodoStatus, deleteTodo, assignTodo } from "../../lib/todos"
+import { sendTodo, getTodos, updateTodoStatus, deleteTodo, assignTodo, getUserProfile } from "../../lib/todos"
 import PillCounter from "./PillCounter"
 import TodoField from "./TodoField"
 import { getGroupMembers } from "../../lib/chat"
+import LoadingTab from "../LoadingTab"
 
 function TodoTab({ groupId }) {
     const [list, setList] = useState({ "pending": [], "process": [], "completed": [] })
     const [newTodo, setNewTodo] = useState("")
     const { user } = useAuth()
     const [members, setMembers] = useState([]);
-    const [filterByUser, setFilterByUser] = useState("all"); // Add this state
+    const [filterByUser, setFilterByUser] = useState("all"); 
+    const [loading, setLoading] = useState(true);
+    const [memberProfiles, setMemberProfiles] = useState([]);
 
-    // Add fetchTodos function outside useEffect for reuse
     const fetchTodos = async () => {
         if (!groupId || !user) return;
         
-        const idToken = await user.getIdToken();
-        const result = await getTodos(groupId, idToken);
-        
-        if (result.success) {
-            const organized = {
-                pending: [],
-                process: [],
-                completed: []
-            };
+        try {
+            const idToken = await user.getIdToken();
+            const result = await getTodos(groupId, idToken);
             
-            result.todos.forEach(todo => {
-                organized[todo.status].push({
-                    id: todo.id,
-                    name: todo.text,
-                    assignedTo: todo.assignedTo || []
+            if (result.success) {
+                const organized = {
+                    pending: [],
+                    process: [],
+                    completed: []
+                };
+                
+                result.todos.forEach(todo => {
+                    organized[todo.status].push({
+                        id: todo.id,
+                        name: todo.text,
+                        assignedTo: todo.assignedTo || []
+                    });
                 });
-            });
-            
-            setList(organized);
+                
+                setList(organized);
+            }
+        } finally {
+            setLoading(false);
         }
     };
 
-    // Initial fetch
     useEffect(() => {
-        fetchTodos();
-    }, [groupId, user]);
-
-    // Set up polling
-    useEffect(() => {
+        let isMounted = true;
+        
         const interval = setInterval(() => {
-            fetchTodos();
-        }, 5000); // 5 seconds
+            if (isMounted) {
+                fetchTodos();
+            }
+        }, 5000);
 
-        // Cleanup on unmount
-        return () => clearInterval(interval);
+        return () => {
+            isMounted = false;
+            clearInterval(interval);
+        };
     }, [groupId, user]);
 
     useEffect(() => {
         const fetchMembers = async () => {
             if (!groupId || !user) return;
+            setLoading(true);
             const idToken = await user.getIdToken();
             const result = await getGroupMembers(groupId, idToken);
             if (result.success) {
                 setMembers(result.members);
             }
+
         };
         fetchMembers();
     }, [groupId, user]);
+
+    useEffect(() => {
+        const fetchMemberProfiles = async () => {
+            if (!members.length || !user) return;
+            
+            const idToken = await user.getIdToken();
+            const profiles = await Promise.all(
+                members.map(async (member) => {
+                    const result = await getUserProfile(member.uid, idToken);
+                    return {
+                        ...member,
+                        fullName: result.success ? 
+                            `${result.profile.firstName} ${result.profile.lastName}` : 
+                            member.email
+                    };
+                })
+            );
+            setMemberProfiles(profiles);
+        };
+
+        fetchMemberProfiles();
+    }, [members, user]);
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -78,7 +108,7 @@ function TodoTab({ groupId }) {
           setList(prev => ({
             ...prev,
             pending: [...prev.pending, {
-              id: Date.now().toString(), // temporary ID
+              id: Date.now().toString(),
               name: newTodo
             }]
           }))
@@ -87,33 +117,37 @@ function TodoTab({ groupId }) {
       }
 
     const handleDragEnd = async (e) => {
-        if (!e.destination) return;
+        if (!e.destination || !user) return;
+        
+        try {
+            const newClass = {...list}
+            const destinationId = e.destination.droppableId
+            const destinationIndex = e.destination.index
+            const sourceId = e.source.droppableId
+            const sourceIndex = e.source.index
 
-        const newClass = {...list}
-        const destinationId = e.destination.droppableId
-        const destinationIndex = e.destination.index
-        const sourceId = e.source.droppableId
-        const sourceIndex = e.source.index
+            // Remove from source and add to destination
+            const [movedItem] = newClass[sourceId].splice(sourceIndex, 1)
+            newClass[destinationId].splice(destinationIndex, 0, movedItem)
 
-        // Remove from source and add to destination
-        const [movedItem] = newClass[sourceId].splice(sourceIndex, 1)
-        newClass[destinationId].splice(destinationIndex, 0, movedItem)
+            // Update state optimistically
+            setList(newClass)
 
-        // Update state optimistically
-        setList(newClass)
-
-        // Update in backend
-        if (sourceId !== destinationId) {
-            const idToken = await user.getIdToken()
-            const result = await updateTodoStatus(movedItem.id, destinationId, idToken)
-            
-            if (!result.success) {
-                // Revert changes if update fails
-                const revertedList = {...list}
-                const [revertItem] = revertedList[destinationId].splice(destinationIndex, 1)
-                revertedList[sourceId].splice(sourceIndex, 0, revertItem)
-                setList(revertedList)
+            // Update in backend
+            if (sourceId !== destinationId) {
+                const idToken = await user.getIdToken()
+                const result = await updateTodoStatus(movedItem.id, destinationId, idToken)
+                
+                if (!result.success) {
+                    // Revert changes if update fails
+                    const revertedList = {...list}
+                    const [revertItem] = revertedList[destinationId].splice(destinationIndex, 1)
+                    revertedList[sourceId].splice(sourceIndex, 0, revertItem)
+                    setList(revertedList)
+                }
             }
+        } catch (error) {
+            console.error('Drag operation failed:', error);
         }
     }
 
@@ -155,6 +189,10 @@ function TodoTab({ groupId }) {
         );
     };
 
+    if (loading) {
+        return <LoadingTab />;
+    }
+
     return (
         <div className="flex flex-col gap-4 w-full m-4">
             <div className="flex gap-4">
@@ -179,23 +217,25 @@ function TodoTab({ groupId }) {
                     className="w-[200px] p-3 bg-shade-300 rounded-[10px]"
                 >
                     <option value="all">All Todos</option>
-                    <option value={user?.uid}>My Todos</option>
-                    {members.map(member => (
+                    <option value={user?.uid}>My Tasks</option>
+                    {memberProfiles.map(member => (
                         member.uid !== user?.uid && (
                             <option key={member.uid} value={member.uid}>
-                                {member.email}
+                                {member.fullName}
                             </option>
                         )
                     ))}
                 </select>
             </div>
 
-            <DragDropContext onDragEnd={handleDragEnd}>
+            <DragDropContext onDragEnd={handleDragEnd} onBeforeDragStart={() => {
+                if (!user) return false;
+            }}>
                 <div className="flex py-4 gap-4 w-full h-full text-[24px]">
                     <div className="flex flex-col gap-3 basis-1/3">
                         <div className="flex gap-1 items-center p-4 rounded-[8px] bg-[#9370DB]">
                             <div className="">Pending</div>
-                            <PillCounter counter={13} />
+                            <PillCounter counter={getFilteredTodos(list, "pending").length} />
                         </div>
                         <Droppable droppableId="pending" type="group">
                         {(provided) => (
@@ -211,7 +251,7 @@ function TodoTab({ groupId }) {
                                             onDelete={handleDelete}
                                             onAssign={handleAssign}
                                             assignedTo={store.assignedTo}
-                                            members={members}
+                                            members={memberProfiles}
                                         />
                                     </div>
                                 )}
@@ -226,7 +266,7 @@ function TodoTab({ groupId }) {
                     <div className="flex flex-col gap-3 basis-1/3">
                         <div className="flex gap-1 items-center p-4 rounded-[8px] bg-[#1E90FF]">
                             <div className="">In Process</div>
-                            <PillCounter counter={1} />
+                            <PillCounter counter={getFilteredTodos(list, "process").length} />
                         </div>
                         <Droppable droppableId="process" type="group">
                         {(provided) => (
@@ -242,7 +282,7 @@ function TodoTab({ groupId }) {
                                             onDelete={handleDelete}
                                             onAssign={handleAssign}
                                             assignedTo={store.assignedTo}
-                                            members={members}
+                                            members={memberProfiles}
                                         />
                                     </div>
                                 )}
@@ -257,7 +297,7 @@ function TodoTab({ groupId }) {
                     <div className="flex flex-col gap-3 basis-1/3">
                         <div className="flex gap-1 items-center p-4 rounded-[8px] bg-primary-tint-400">
                             <div className="">Completed</div>
-                            <PillCounter counter={100} />
+                            <PillCounter counter={getFilteredTodos(list, "completed").length} />
                         </div>
                         <Droppable droppableId="completed" type="group">
                         {(provided) => (
@@ -273,7 +313,7 @@ function TodoTab({ groupId }) {
                                             onDelete={handleDelete}
                                             onAssign={handleAssign}
                                             assignedTo={store.assignedTo}
-                                            members={members}
+                                            members={memberProfiles}
                                         />
                                     </div>
                                 )}

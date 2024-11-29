@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { getUserProfile } from '../../lib/todos';
 import { useAuth } from '../../contexts/AuthContext';
+import { useProfiles } from '../../contexts/ProfileContext';
 
 function TodoField({todo, todoId, onDelete, onAssign, assignedTo, members}) {
   const [showAssignMenu, setShowAssignMenu] = useState(false);
   const [assignedUsers, setAssignedUsers] = useState([]);
   const { user } = useAuth();
+  const { getProfile } = useProfiles();
 
   useEffect(() => {
     const fetchUserProfiles = async () => {
@@ -14,19 +15,15 @@ function TodoField({todo, todoId, onDelete, onAssign, assignedTo, members}) {
       const idToken = await user.getIdToken();
       const profiles = await Promise.all(
         assignedTo.map(async (uid) => {
-          const result = await getUserProfile(uid, idToken);
-          if (result.success) {
-            console.log(result);
-            return `${result.profile.firstName} ${result.profile.lastName}`;
-          }
-          return uid; 
+          const profile = await getProfile(uid, idToken);
+          return profile ? profile.username : uid;
         })
       );
       setAssignedUsers(profiles);
     };
 
     fetchUserProfiles();
-  }, [assignedTo, user]);
+  }, [assignedTo, user, getProfile]);
 
   return (
     <div className="relative flex justify-between w-full p-4 bg-shade-300 rounded-[8px] text-[16px]">
@@ -60,7 +57,7 @@ function TodoField({todo, todoId, onDelete, onAssign, assignedTo, members}) {
                                 setShowAssignMenu(false);
                             }}
                         >
-                            <span>{member.email}</span>
+                            <span>{member.fullName}</span>
                         </div>
                     ))}
                 </div>

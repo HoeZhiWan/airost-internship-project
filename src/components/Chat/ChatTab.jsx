@@ -2,10 +2,11 @@ import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import ChatMessage from "./ChatMessage";
 import { sendMessage, getMessages } from "../../lib/chat";
 import { auth } from "../../../firebase-client";
-import LoadingScreen from "../LoadingScreen";
 import { useAuth } from '../../contexts/AuthContext';
 import { getProfileInfo } from "../../lib/action";
 import { FaFileUpload } from 'react-icons/fa';
+import LoadingTab from "../LoadingTab";
+import { uploadFile } from '../../lib/fileUpload';
 
 function ChatTab({ groupId }) {
   const { user } = useAuth();
@@ -19,6 +20,8 @@ function ChatTab({ groupId }) {
   const [isDragging, setIsDragging] = useState(false);
   const dragCounterRef = useRef(0);
   const [hasScrolled, setHasScrolled] = useState(false);
+  const [error, setError] = useState(null);
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 
   const scrollToBottom = (instant = false) => {
     if (!messagesEndRef.current) return;
@@ -32,7 +35,7 @@ function ChatTab({ groupId }) {
     const container = messagesEndRef.current?.parentElement;
     if (!container) return false;
     
-    const threshold = 100; // pixels from bottom to consider "at bottom"
+    const threshold = 100; 
     return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
   };
 
@@ -101,7 +104,7 @@ function ChatTab({ groupId }) {
   }, [messages]);
 
   if (loading) {
-    return <LoadingScreen />;
+    return <LoadingTab />;
   }
 
   const handleSubmit = async (e) => {
@@ -109,7 +112,7 @@ function ChatTab({ groupId }) {
     if (!newMessage.trim() || !groupId) return;
 
     const messageText = newMessage;
-    setNewMessage(""); // Clear input immediately for better UX
+    setNewMessage(""); 
 
     const idToken = await auth.currentUser.getIdToken();
     const result = await sendMessage(
@@ -120,7 +123,6 @@ function ChatTab({ groupId }) {
     );
 
     if (!result.success) {
-      // Revert on failure
       setNewMessage(messageText);
       console.error('Failed to send message');
     }
@@ -129,6 +131,7 @@ function ChatTab({ groupId }) {
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+      setError(null);
       handleSubmit(e);
     }
   };
@@ -154,6 +157,14 @@ function ChatTab({ groupId }) {
     }
   };
 
+  const validateFileSize = (file) => {
+    if (file.size > MAX_FILE_SIZE) {
+      setError('File size must be less than 5MB');
+      return false;
+    }
+    return true;
+  };
+
   const handleDrop = async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -163,15 +174,32 @@ function ChatTab({ groupId }) {
     const file = e.dataTransfer.files[0];
     if (!file || !groupId) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('groupId', groupId);
+    if (!validateFileSize(file)) return;
 
-    const idToken = await user.getIdToken();
-    const result = await sendMessage(null, auth.currentUser.uid, groupId, idToken, formData);
+    try {
+      setError(null);
+      const idToken = await user.getIdToken();
+      const uploadResult = await uploadFile(file, groupId, idToken);
+      
+      if (!uploadResult.success || !uploadResult.metadata) {
+        throw new Error('File upload failed');
+      }
 
-    if (!result.success) {
-      console.error('Failed to send file');
+      // Send message with file metadata
+      const result = await sendMessage(
+        null,
+        auth.currentUser.uid,
+        groupId,
+        idToken,
+        uploadResult.metadata
+      );
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send file message');
+      }
+    } catch (error) {
+      console.error('Failed to handle file:', error);
+      setError(error.message || 'Failed to upload file');
     }
   };
 
@@ -195,6 +223,11 @@ function ChatTab({ groupId }) {
         ))}
         <div ref={messagesEndRef} />
       </div>
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+          {error}
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="w-full">
         <input 
           type="text" 

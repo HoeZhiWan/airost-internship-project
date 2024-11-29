@@ -1,26 +1,29 @@
 import { FaFile, FaDownload, FaTimes } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
-import { getUserProfile } from '../../lib/todos';
 import { useAuth } from '../../contexts/AuthContext';
+import { useProfiles } from '../../contexts/ProfileContext';
 
 function ChatMessage({ message }) {
   const [showPreview, setShowPreview] = useState(false);
   const [username, setUsername] = useState('');
+  const [profilePicture, setProfilePicture] = useState('');
   const { user } = useAuth();
+  const { getProfile } = useProfiles();
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!message.userId || !user) return;
       
       const idToken = await user.getIdToken();
-      const result = await getUserProfile(message.userId, idToken);
-      if (result.success) {
-        setUsername(`${result.profile.firstName} ${result.profile.lastName}`);
+      const profile = await getProfile(message.userId, idToken);
+      if (profile) {
+        setUsername(profile.username);
+        setProfilePicture(profile.profilePicture);
       }
     };
 
     fetchUserProfile();
-  }, [message.userId, user]);
+  }, [message.userId, user, getProfile]);
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return "";
@@ -113,11 +116,11 @@ function ChatMessage({ message }) {
             href={message.fileUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg hover:bg-gray-200"
+            className="flex items-center gap-2 p-2 bg-gray-100 rounded-lg hover:bg-gray-200 max-w-[300px]"
           >
-            <FaFile className="text-gray-500"/>
-            <span className="truncate text-gray-500">{message.fileName}</span>
-            <FaDownload fill="#08BD7A"/>
+            <FaFile className="text-gray-500 flex-shrink-0"/>
+            <span className="truncate flex-1 text-gray-500">{message.fileName}</span>
+            <FaDownload className="flex-shrink-0" fill="#08BD7A"/>
           </a>
         )}
       </div>
@@ -126,7 +129,7 @@ function ChatMessage({ message }) {
 
   return (
     <div className="flex mb-4">
-      <img src="src\assets\Default_pfp.svg" alt="" className="w-12 h-12" />
+      <img src={profilePicture} alt="" className="w-12 h-12 rounded-full object-cover" />
       <div className="ms-[10px]">
         <div className="font-bold flex items-baseline">
           <div>{username}</div>
@@ -134,7 +137,7 @@ function ChatMessage({ message }) {
             {formatTimestamp(message.timestamp)}
           </div>
         </div>
-        <div>
+        <div className="break-words max-w-[600px]">
           {message.text}
           {renderFilePreview()}
         </div>

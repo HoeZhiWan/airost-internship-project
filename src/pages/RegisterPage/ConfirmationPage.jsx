@@ -19,8 +19,8 @@ function ConfirmationPage() {
         console.log('No user, redirecting to login');
         navigate('/login');
       } else if (user.emailVerified) {
-        console.log('Email verified, redirecting to profile');
-        navigate('/profile');
+        console.log('Email verified, redirecting to set up profile');
+        navigate('/setup-profile');
       }
     }
   }, [user, loading, navigate]);

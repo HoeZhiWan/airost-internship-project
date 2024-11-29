@@ -1,9 +1,9 @@
-
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminFirestore } from "@/firebase-server";
 import { UTApi } from "uploadthing/server";
 
 const utapi = new UTApi();
+const db = adminFirestore;
 
 export async function DELETE(request: NextRequest) {
     try {
@@ -14,29 +14,30 @@ export async function DELETE(request: NextRequest) {
         }
 
         const token = authHeader.split('Bearer ')[1];
-        const decodedToken = await adminAuth.verifyIdToken(token);
+        await adminAuth.verifyIdToken(token);
 
-        // Get file ID and key from request body
         const { fileId, key } = await request.json();
 
-        // Get file document
-        const fileDoc = await adminFirestore.collection('files').doc(fileId).get();
-        
-        if (!fileDoc.exists) {
-            return NextResponse.json({ error: 'File not found' }, { status: 404 });
-        }
-
-        // Verify ownership
-        const fileData = fileDoc.data();
-        if (fileData?.uploadedBy !== decodedToken.uid) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        if (!fileId || !key) {
+            return NextResponse.json(
+                { error: "File ID and key are required" },
+                { status: 400 }
+            );
         }
 
         // Delete from UploadThing
         await utapi.deleteFiles(key);
 
-        // Delete from Firestore
-        await adminFirestore.collection('files').doc(fileId).delete();
+        // Delete associated messages
+        const messagesSnapshot = await db.collection('messages')
+            .where('fileId', '==', fileId)
+            .get();
+
+        const messageDeletions = messagesSnapshot.docs.map(doc => doc.ref.delete());
+        await Promise.all(messageDeletions);
+
+        // Delete file metadata from Firestore
+        await db.collection('files').doc(fileId).delete();
 
         return NextResponse.json({ success: true });
     } catch (error) {

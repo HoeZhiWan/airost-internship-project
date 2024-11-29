@@ -4,6 +4,11 @@ import { adminAuth, adminFirestore } from "@/firebase-server";
 
 export async function GET(request: NextRequest) {
     try {
+        const groupId = request.nextUrl.searchParams.get('groupId');
+        if (!groupId) {
+            return NextResponse.json({ error: 'Group ID is required' }, { status: 400 });
+        }
+
         // Verify authentication
         const authHeader = request.headers.get('authorization');
         if (!authHeader?.startsWith('Bearer ')) {
@@ -16,7 +21,7 @@ export async function GET(request: NextRequest) {
         // Query files for the user
         const filesSnapshot = await adminFirestore
             .collection('files')
-            .where('uploadedBy', '==', decodedToken.uid)
+            .where('groupId', '==', groupId)
             .orderBy('uploadedAt', 'desc')
             .get();
 

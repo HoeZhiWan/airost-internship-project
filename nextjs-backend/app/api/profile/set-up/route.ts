@@ -27,6 +27,7 @@ export async function POST(req: NextRequest, res:NextResponse) {
         lastName: lname,
         phoneNumber: phoneNo,
         areaCode: areaCode,
+        profilePictureUrl: null,
         createdAt: new Date()
       });
 
