@@ -54,3 +54,24 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+export async function DELETE(req: NextRequest) {
+    try {
+        const { todoId } = await req.json();
+        const authHeader = req.headers.get('authorization');
+        
+        if (!authHeader?.startsWith('Bearer ')) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const token = authHeader.split('Bearer ')[1];
+        await adminAuth.verifyIdToken(token);
+
+        await db.collection('todos').doc(todoId).delete();
+
+        return NextResponse.json({ success: true }, { status: 200 });
+    } catch (error) {
+        console.error('Error deleting todo:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd"
 import { useAuth } from '../../contexts/AuthContext'
-import { sendTodo, getTodos, updateTodoStatus } from "../../lib/chat"
+import { sendTodo, getTodos, updateTodoStatus, deleteTodo } from "../../lib/todos"
 import PillCounter from "./PillCounter"
 import TodoField from "./TodoField"
 
@@ -101,6 +101,24 @@ function TodoTab({ groupId }) {
         }
     }
 
+    const handleDelete = async (todoId) => {
+        if (!user) return;
+        
+        const idToken = await user.getIdToken();
+        const result = await deleteTodo(todoId, idToken);
+        
+        if (result.success) {
+            // Update lists by removing the deleted todo
+            setList(prev => {
+                const newList = { ...prev };
+                ['pending', 'process', 'completed'].forEach(status => {
+                    newList[status] = newList[status].filter(todo => todo.id !== todoId);
+                });
+                return newList;
+            });
+        }
+    };
+
     return (
         <div className="flex flex-col gap-4 w-full m-4">
             <form onSubmit={handleSubmit} className="flex h-12 gap-4 w-full text-[20px]">
@@ -134,7 +152,11 @@ function TodoTab({ groupId }) {
                                 <Draggable key={store.id} draggableId={store.id} index={index}>
                                 {(provided) => (
                                     <div className="mb-3" {...provided.dragHandleProps} {...provided.draggableProps} ref={provided.innerRef}>
-                                        <TodoField todo={store.name} />
+                                        <TodoField 
+                                            todo={store.name} 
+                                            todoId={store.id}
+                                            onDelete={handleDelete}
+                                        />
                                     </div>
                                 )}
                                 </Draggable>
@@ -158,7 +180,11 @@ function TodoTab({ groupId }) {
                                 <Draggable key={store.id} draggableId={store.id} index={index}>
                                 {(provided) => (
                                     <div className="mb-3" {...provided.dragHandleProps} {...provided.draggableProps} ref={provided.innerRef}>
-                                        <TodoField todo={store.name} />
+                                        <TodoField 
+                                            todo={store.name} 
+                                            todoId={store.id}
+                                            onDelete={handleDelete}
+                                        />
                                     </div>
                                 )}
                                 </Draggable>
@@ -182,7 +208,11 @@ function TodoTab({ groupId }) {
                                 <Draggable key={store.id} draggableId={store.id} index={index}>
                                 {(provided) => (
                                     <div className="mb-3" {...provided.dragHandleProps} {...provided.draggableProps} ref={provided.innerRef}>
-                                        <TodoField todo={store.name} />
+                                        <TodoField 
+                                            todo={store.name} 
+                                            todoId={store.id}
+                                            onDelete={handleDelete}
+                                        />
                                     </div>
                                 )}
                                 </Draggable>
