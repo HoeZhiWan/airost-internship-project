@@ -11,6 +11,7 @@ function TodoTab({ groupId }) {
     const [newTodo, setNewTodo] = useState("")
     const { user } = useAuth()
     const [members, setMembers] = useState([]);
+    const [filterByUser, setFilterByUser] = useState("all"); // Add this state
 
     // Add fetchTodos function outside useEffect for reuse
     const fetchTodos = async () => {
@@ -145,9 +146,19 @@ function TodoTab({ groupId }) {
         }
     };
 
+    const getFilteredTodos = (todos, status) => {
+        const statusTodos = todos[status] || [];
+        if (filterByUser === "all") return statusTodos;
+        
+        return statusTodos.filter(todo => 
+            todo.assignedTo?.includes(filterByUser)
+        );
+    };
+
     return (
         <div className="flex flex-col gap-4 w-full m-4">
-            <form onSubmit={handleSubmit} className="flex h-12 gap-4 w-full text-[20px]">
+            <div className="flex gap-4">
+                <form onSubmit={handleSubmit} className="flex h-12 gap-4 w-full text-[20px]">
                     <input 
                         type="text" 
                         value={newTodo}
@@ -155,13 +166,29 @@ function TodoTab({ groupId }) {
                         className="border-0 w-full p-[12px] py-[8px] bg-shade-300 placeholder-text placeholder:italic rounded-[10px] focus:ring-0" 
                         placeholder="Add new todo" 
                     />
-                <button 
-                    type="submit"
-                    className="w-[160px] p-3 bg-primary-tint-300 rounded-[10px] flex items-center justify-center"
+                    <button 
+                        type="submit"
+                        className="w-[160px] p-3 bg-primary-tint-300 rounded-[10px] flex items-center justify-center"
+                    >
+                        Add Todo
+                    </button>
+                </form>
+                <select 
+                    value={filterByUser}
+                    onChange={(e) => setFilterByUser(e.target.value)}
+                    className="w-[200px] p-3 bg-shade-300 rounded-[10px]"
                 >
-                    Add Todo
-                </button>
-            </form>
+                    <option value="all">All Todos</option>
+                    <option value={user?.uid}>My Todos</option>
+                    {members.map(member => (
+                        member.uid !== user?.uid && (
+                            <option key={member.uid} value={member.uid}>
+                                {member.email}
+                            </option>
+                        )
+                    ))}
+                </select>
+            </div>
 
             <DragDropContext onDragEnd={handleDragEnd}>
                 <div className="flex py-4 gap-4 w-full h-full text-[24px]">
@@ -174,7 +201,7 @@ function TodoTab({ groupId }) {
                         {(provided) => (
                         <div className="" {...provided.droppableProps} ref={provided.innerRef}>
                             {
-                            list.pending.map((store, index) => (
+                            getFilteredTodos(list, "pending").map((store, index) => (
                                 <Draggable key={store.id} draggableId={store.id} index={index}>
                                 {(provided) => (
                                     <div className="mb-3" {...provided.dragHandleProps} {...provided.draggableProps} ref={provided.innerRef}>
@@ -205,7 +232,7 @@ function TodoTab({ groupId }) {
                         {(provided) => (
                         <div className="" {...provided.droppableProps} ref={provided.innerRef}>
                             {
-                            list.process.map((store, index) => (
+                            getFilteredTodos(list, "process").map((store, index) => (
                                 <Draggable key={store.id} draggableId={store.id} index={index}>
                                 {(provided) => (
                                     <div className="mb-3" {...provided.dragHandleProps} {...provided.draggableProps} ref={provided.innerRef}>
@@ -236,7 +263,7 @@ function TodoTab({ groupId }) {
                         {(provided) => (
                         <div className="" {...provided.droppableProps} ref={provided.innerRef}>
                             {
-                            list.completed.map((store, index) => (
+                            getFilteredTodos(list, "completed").map((store, index) => (
                                 <Draggable key={store.id} draggableId={store.id} index={index}>
                                 {(provided) => (
                                     <div className="mb-3" {...provided.dragHandleProps} {...provided.draggableProps} ref={provided.innerRef}>
