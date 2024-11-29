@@ -77,3 +77,42 @@ export const createGroup = async (name: string, idToken: string) => {
     return { success: false, error };
   }
 };
+
+export interface GroupMember {
+  uid: string;
+  email: string;
+  isAdmin: boolean;
+}
+
+export const getGroupMembers = async (groupId: string, idToken: string) => {
+  try {
+    const response = await fetch(`http://localhost:3000/api/chat/members?groupId=${groupId}`, {
+      headers: {
+        'Authorization': `Bearer ${idToken}`
+      }
+    });
+    if (!response.ok) throw new Error('Failed to fetch members');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching members:', error);
+    return { success: false, error };
+  }
+};
+
+export const addGroupMember = async (groupId: string, email: string, idToken: string) => {
+  try {
+    const response = await fetch('http://localhost:3000/api/chat/members', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+      },
+      body: JSON.stringify({ groupId, email })
+    });
+    if (!response.ok) throw new Error('Failed to add member');
+    return await response.json();
+  } catch (error) {
+    console.error('Error adding member:', error);
+    return { success: false, error };
+  }
+};

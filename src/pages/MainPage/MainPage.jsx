@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { getGroups, createGroup } from "../../lib/chat";
+import { getGroups, createGroup, getGroupMembers, addGroupMember } from "../../lib/chat";
 import ChatTab from "../../components/Chat/ChatTab";
 import LoadingScreen from "../../components/LoadingScreen";
 import { useAuth } from '../../contexts/AuthContext';
@@ -43,6 +43,68 @@ function NavBar({groupName, activeTab, setActiveTab, showMember, setShowMember})
         </div>
       </div>
   )
+}
+
+function MemberList({ groupId }) {
+  const [members, setMembers] = useState([]);
+  const [newMemberEmail, setNewMemberEmail] = useState("");
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      if (!groupId || !user) return;
+      const idToken = await user.getIdToken();
+      const result = await getGroupMembers(groupId, idToken);
+      if (result.success) {
+        setMembers(result.members);
+      }
+    };
+    fetchMembers();
+  }, [groupId, user]);
+
+  const handleAddMember = async (e) => {
+    e.preventDefault();
+    if (!newMemberEmail.trim() || !user || !groupId) return;
+
+    const idToken = await user.getIdToken();
+    const result = await addGroupMember(groupId, newMemberEmail, idToken);
+    
+    if (result.success) {
+      setNewMemberEmail("");
+      // Refresh member list
+      const updatedMembers = await getGroupMembers(groupId, idToken);
+      if (updatedMembers.success) {
+        setMembers(updatedMembers.members);
+      }
+    }
+  };
+
+  return (
+    <div className="p-4">
+      <h2 className="text-xl font-bold mb-4">Members</h2>
+      <div className="space-y-2 mb-4">
+        {members.map(member => (
+          <div key={member.uid} className="flex items-center justify-between">
+            <span>{member.email}</span>
+            {member.isAdmin && (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" fill="#08BD7A"  className="size-6">
+                <path d="M576 136c0 22.09-17.91 40-40 40c-.248 0-.4551-.1266-.7031-.1305l-50.52 277.9C482 468.9 468.8 480 453.3 480H122.7c-15.46 0-28.72-11.06-31.48-26.27L40.71 175.9C40.46 175.9 40.25 176 39.1 176c-22.09 0-40-17.91-40-40S17.91 96 39.1 96s40 17.91 40 40c0 8.998-3.521 16.89-8.537 23.57l89.63 71.7c15.91 12.73 39.5 7.544 48.61-10.68l57.6-115.2C255.1 98.34 247.1 86.34 247.1 72C247.1 49.91 265.9 32 288 32s39.1 17.91 39.1 40c0 14.34-7.963 26.34-19.3 33.4l57.6 115.2c9.111 18.22 32.71 23.4 48.61 10.68l89.63-71.7C499.5 152.9 496 144.1 496 136C496 113.9 513.9 96 536 96S576 113.9 576 136z"/>
+              </svg>
+            )}
+          </div>
+        ))}
+      </div>
+      <form onSubmit={handleAddMember}>
+        <input
+          type="email"
+          value={newMemberEmail}
+          onChange={(e) => setNewMemberEmail(e.target.value)}
+          placeholder="Add member by email"
+          className="w-full px-3 py-2 bg-shade-300 rounded-md"
+        />
+      </form>
+    </div>
+  );
 }
 
 function MainPage() {
@@ -164,9 +226,9 @@ function MainPage() {
         />
         <div className="flex flex-row h-[671px]">
           {renderView()}
-          {showMember &&
+          {showMember && selectedGroup &&
             <div className="basis-1/3 bg-shade-500">
-              Hello
+              <MemberList groupId={selectedGroup.id} />
             </div>
           }
         </div>
