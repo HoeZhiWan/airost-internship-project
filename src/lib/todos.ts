@@ -1,4 +1,3 @@
-
 export interface Todo {
   id: string;
   text: string;
@@ -6,6 +5,7 @@ export interface Todo {
   groupId: string;
   status: 'pending' | 'process' | 'completed';
   timestamp: Date;
+  assignedTo?: string[]; // Add this field
 }
 
 export const sendTodo = async (text: string, groupId: string, idToken: string) => {
@@ -79,6 +79,39 @@ export const deleteTodo = async (todoId: string, idToken: string) => {
     return await response.json();
   } catch (error) {
     console.error('Error deleting todo:', error);
+    return { success: false, error };
+  }
+};
+
+export const assignTodo = async (todoId: string, assignedTo: string[], idToken: string) => {
+  try {
+    const response = await fetch('http://localhost:3000/api/todo/assign', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+      },
+      body: JSON.stringify({ todoId, assignedTo })
+    });
+    if (!response.ok) throw new Error('Failed to assign todo');
+    return await response.json();
+  } catch (error) {
+    console.error('Error assigning todo:', error);
+    return { success: false, error };
+  }
+};
+
+export const getUserProfile = async (userId: string, idToken: string) => {
+  try {
+    const response = await fetch(`http://localhost:3000/api/profile/info/${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${idToken}`
+      }
+    });
+    if (!response.ok) throw new Error('Failed to fetch user profile');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
     return { success: false, error };
   }
 };

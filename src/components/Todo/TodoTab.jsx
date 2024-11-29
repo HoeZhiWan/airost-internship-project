@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react"
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd"
 import { useAuth } from '../../contexts/AuthContext'
-import { sendTodo, getTodos, updateTodoStatus, deleteTodo } from "../../lib/todos"
+import { sendTodo, getTodos, updateTodoStatus, deleteTodo, assignTodo } from "../../lib/todos"
 import PillCounter from "./PillCounter"
 import TodoField from "./TodoField"
+import { getGroupMembers } from "../../lib/chat"
 
 function TodoTab({ groupId }) {
     const [list, setList] = useState({ "pending": [], "process": [], "completed": [] })
     const [newTodo, setNewTodo] = useState("")
     const { user } = useAuth()
+    const [members, setMembers] = useState([]);
 
     // Add fetchTodos function outside useEffect for reuse
     const fetchTodos = async () => {
@@ -27,7 +29,8 @@ function TodoTab({ groupId }) {
             result.todos.forEach(todo => {
                 organized[todo.status].push({
                     id: todo.id,
-                    name: todo.text
+                    name: todo.text,
+                    assignedTo: todo.assignedTo || []
                 });
             });
             
@@ -48,6 +51,18 @@ function TodoTab({ groupId }) {
 
         // Cleanup on unmount
         return () => clearInterval(interval);
+    }, [groupId, user]);
+
+    useEffect(() => {
+        const fetchMembers = async () => {
+            if (!groupId || !user) return;
+            const idToken = await user.getIdToken();
+            const result = await getGroupMembers(groupId, idToken);
+            if (result.success) {
+                setMembers(result.members);
+            }
+        };
+        fetchMembers();
     }, [groupId, user]);
 
     const handleSubmit = async (e) => {
@@ -119,6 +134,17 @@ function TodoTab({ groupId }) {
         }
     };
 
+    const handleAssign = async (todoId, uid) => {  
+        if (!user) return;
+        
+        const idToken = await user.getIdToken();
+        const result = await assignTodo(todoId, [uid], idToken);  
+        
+        if (result.success) {
+            await fetchTodos(); 
+        }
+    };
+
     return (
         <div className="flex flex-col gap-4 w-full m-4">
             <form onSubmit={handleSubmit} className="flex h-12 gap-4 w-full text-[20px]">
@@ -131,7 +157,7 @@ function TodoTab({ groupId }) {
                     />
                 <button 
                     type="submit"
-                    className="w-[160px] p-3 bg-primary-tint-300 rounded-[10px]"
+                    className="w-[160px] p-3 bg-primary-tint-300 rounded-[10px] flex items-center justify-center"
                 >
                     Add Todo
                 </button>
@@ -156,6 +182,9 @@ function TodoTab({ groupId }) {
                                             todo={store.name} 
                                             todoId={store.id}
                                             onDelete={handleDelete}
+                                            onAssign={handleAssign}
+                                            assignedTo={store.assignedTo}
+                                            members={members}
                                         />
                                     </div>
                                 )}
@@ -184,6 +213,9 @@ function TodoTab({ groupId }) {
                                             todo={store.name} 
                                             todoId={store.id}
                                             onDelete={handleDelete}
+                                            onAssign={handleAssign}
+                                            assignedTo={store.assignedTo}
+                                            members={members}
                                         />
                                     </div>
                                 )}
@@ -212,6 +244,9 @@ function TodoTab({ groupId }) {
                                             todo={store.name} 
                                             todoId={store.id}
                                             onDelete={handleDelete}
+                                            onAssign={handleAssign}
+                                            assignedTo={store.assignedTo}
+                                            members={members}
                                         />
                                     </div>
                                 )}
