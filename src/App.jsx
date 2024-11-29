@@ -13,6 +13,7 @@ import ProfilePage from "./pages/ProfilePage/ProfilePage";
 import MainPage from "./pages/MainPage/MainPage";
 import DeleteUsersPage from "./pages/DebugPage/DeleteUsersPage";
 import { AuthContextProvider } from "./contexts/AuthContext";
+import UploadPage from "./pages/DebugPage/UploadPage";
 
 function App() {
   return (
@@ -23,6 +24,8 @@ function App() {
             <Route path="/verify" element={<VerifyPage />} />
             <Route path="/forgetPassword" element={<ForgetPasswordPage />} />
             <Route path="/reset" element={<ResetPasswordPage />} />
+
+            <Route path="/upload-test" element={<UploadPage />} />
             <Route path="/delete-uers" element={<DeleteUsersPage />} />
 
             {/* Public/Auth Routes */}

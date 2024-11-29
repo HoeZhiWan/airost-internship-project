@@ -6,7 +6,7 @@ const db = adminFirestore;
 
 export async function GET(req: NextRequest, { params }: { params: { userId: string } }) {
     try {
-        const userId = params.userId;
+        const {userId} = await params;
         const authHeader = req.headers.get('authorization');
         
         if (!authHeader?.startsWith('Bearer ')) {

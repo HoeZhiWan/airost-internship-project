@@ -6,18 +6,25 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
-export const sendMessage = async (text: string, userId: string, groupId: string, idToken: string) => {
+export const sendMessage = async (text: string | null, userId: string, groupId: string, idToken: string, formData?: FormData) => {
   try {
-    const apiResponse = await fetch('http://localhost:3000/api/chat/send', {
+    let endpoint = 'http://localhost:3000/api/chat/send';
+    let body;
+    let headers: HeadersInit = {
+      'Authorization': `Bearer ${idToken}`
+    };
+
+    if (formData) {
+      body = formData;
+    } else {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify({ text, groupId });
+    }
+
+    const apiResponse = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}`
-      },
-      body: JSON.stringify({
-        text,
-        groupId
-      })
+      headers,
+      body
     });
 
     if (!apiResponse.ok) {
