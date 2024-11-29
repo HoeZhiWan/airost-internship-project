@@ -1,27 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import areaCodes from "../../assets/CountryCodes.json"
-import { auth } from "../../../firebase-client";
 import { useNavigate } from "react-router-dom";
 import { setupProfile } from "../../lib/action";
+import { useAuth } from "../../contexts/AuthContext";
 
 function SetupPage() {
-  const [user, setUser] = useState(null);
+  const { user, updateUserStatus } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
-
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      if (user) {
-        setUser(user);
-      } else {
-        navigate('/login');
-      }
-    });
-    return () => unsubscribe();
-  }, [navigate]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -36,9 +24,10 @@ function SetupPage() {
       setIsLoading(true);
 
       const result = await setupProfile({user}, fname, lname, areaCode, phoneNo);
-      console.log(result);
       if (result.success) {
         setMessage(result.message);
+        // Update the userStatus in AuthContext
+        await updateUserStatus();
         setTimeout(() => {
           navigate('/profile');
         }, 3000);
@@ -47,13 +36,11 @@ function SetupPage() {
       } else if (result.error) {
         setMessage(result.error.message)
       }
-
     } finally {
       setTimeout(() => {
         setIsLoading(false);
       }, 1000);
     }
-
   }
 
   return (

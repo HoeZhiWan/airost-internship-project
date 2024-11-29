@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '../../firebase-client';
@@ -13,6 +12,18 @@ export function AuthContextProvider({ children }) {
   const [user, loading] = useAuthState(auth);
   const [userStatus, setUserStatus] = useState(null);
   const [checkingStatus, setCheckingStatus] = useState(true);
+
+  const updateUserStatus = async () => {
+    if (!user) return;
+    
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      const status = await checkUserStatus(idToken);
+      setUserStatus(status);
+    } catch (error) {
+      console.error('Error updating user status:', error);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -53,7 +64,11 @@ export function AuthContextProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, userStatus }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      userStatus,
+      updateUserStatus 
+    }}>
       {children}
     </AuthContext.Provider>
   );
