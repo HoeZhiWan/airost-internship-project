@@ -5,7 +5,7 @@ const db = adminFirestore;
 
 export async function GET(req: NextRequest, { params }: { params: { groupId: string } }) {
     try {
-        const groupId = params.groupId;
+        const { groupId } = await params;
         const authHeader = req.headers.get('authorization');
         if (!authHeader?.startsWith('Bearer ')) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
