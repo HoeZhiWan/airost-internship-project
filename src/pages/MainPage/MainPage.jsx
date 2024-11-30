@@ -59,7 +59,6 @@ function MemberList({ groupId }) {
       const idToken = await user.getIdToken();
       const result = await getGroupMembers(groupId, idToken);
       if (result.success) {
-        // Fetch profiles for each member
         const membersWithProfiles = await Promise.all(
           result.members.map(async (member) => {
             const profile = await getProfile(member.uid, idToken);
@@ -176,7 +175,6 @@ function MainPage() {
       const result = await getGroups(idToken);
       if (result.success) {
         setGroups(result.groups);
-        // If there's a group ID in URL, select that group
         if (groupId) {
           const group = result.groups.find(g => g.id === groupId);
           if (group) {

@@ -3,7 +3,6 @@ import LoadingTab from "./LoadingTab";
 import { useAuth } from "../contexts/AuthContext";
 import { FaDownload, FaFile, FaTimes, FaFileImage, FaFilePdf, FaFileWord, FaFileExcel, FaFileAudio, FaFileVideo, FaFileCode, FaTrash, FaEllipsisV, FaLink, FaFileUpload } from 'react-icons/fa';
 import { uploadFile } from '../lib/fileUpload';
-import { getUserProfile } from "../lib/todos";
 import { useProfiles } from '../contexts/ProfileContext';
 
 function FileTab({ groupId }) {
