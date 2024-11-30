@@ -21,7 +21,7 @@ const PublicRoute = () => {
       return path === '/setup-profile' ? <Outlet /> : <Navigate to="/setup-profile" replace />;
     }
     
-    return <Navigate to="/profile" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <Outlet />;

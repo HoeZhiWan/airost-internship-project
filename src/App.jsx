@@ -15,8 +15,9 @@ import VerifyPage from "./pages/RegisterPage/VerifyPage";
 import ProfilePage from "./pages/ProfilePage/ProfilePage";
 import MainPage from "./pages/MainPage/MainPage";
 import DeleteUsersPage from "./pages/DebugPage/DeleteUsersPage";
+import VideoCallPage from "./pages/DebugPage/VideoCallPage";
 
-function App() {
+const App = () => {
   return (
     <div>
       <BrowserRouter>
@@ -41,6 +42,8 @@ function App() {
               <Route element={<ProtectedRoute />}>
                 <Route path="/" element={<MainPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/video-call" element={<VideoCallPage />} />
+                <Route path="/video-call/:callId" element={<VideoCallPage />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,0 +1,103 @@
+
+.str-video__participant-name {
+    color: white !important;
+}
+.str-video__participant-details {
+    color: white !important;
+}
+.str-video__speaker-layout-participant-name {
+    color: white !important;
+}
+
+.str-video__avatar {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+}
+
+.str-video__participant-details {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.str-video__participant-info {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.str-video__participant-image {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+}
+
+.str-video__participant-avatar {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+}
+
+.str-video__menu-button {
+    color: white !important;
+}
+
+.str-video__menu-container {
+    color: white !important;
+    background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+.str-video__menu-item {
+    color: white !important;
+}
+
+.str-video__menu-item:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.str-video__tooltip {
+    color: white !important;
+    background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+.str-video__info {
+    color: white !important;
+}
+
+.str-video__info-container {
+    color: white !important;
+    background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+.str-video__notification {
+    color: white !important;
+    background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Hide recording-related elements */
+.str-video__record-button,
+.str-video__recording-indicator,
+.str-video__menu-item[data-recording],
+[data-testid="record-button"] {
+    display: none !important;
+}
+
+.str-video__call-controls {
+    position: fixed !important;
+    bottom: 20px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 50 !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    padding: 8px 16px !important;
+    border-radius: 12px !important;
+    backdrop-filter: blur(4px) !important;
+}
+
+.str-video__container {
+    height: 100vh !important;
+    overflow: hidden !important;
+}
