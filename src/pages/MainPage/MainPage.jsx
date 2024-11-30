@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { getGroups, createGroup, getGroupMembers, addGroupMember } from "../../lib/chat";
 import ChatTab from "../../components/Chat/ChatTab";
 import LoadingScreen from "../../components/LoadingScreen";
@@ -8,7 +8,7 @@ import TodoTab from "../../components/Todo/TodoTab";
 import FileTab from "../../components/FileTab";
 import { useProfiles } from '../../contexts/ProfileContext';
 
-function NavBar({ groupName, activeTab, setActiveTab, showMember, setShowMember }) {
+function NavBar({ groupName, activeTab, setActiveTab, showMember, setShowMember, onVideoCall }) {
   return (
     <div className="flex justify-between items-center text-[24px] font-bold h-16 px-[17px] py-[10px] border-b-[3px] border-[rgba(0,0,0,0.25)]">
       {groupName}
@@ -25,7 +25,7 @@ function NavBar({ groupName, activeTab, setActiveTab, showMember, setShowMember 
           </svg>
         </button>
 
-        <button>
+        <button onClick={onVideoCall}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-6">
             <path fillRule="evenodd" d="M2.25 5.25a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3V15a3 3 0 0 1-3 3h-3v.257c0 .597.237 1.17.659 1.591l.621.622a.75.75 0 0 1-.53 1.28h-9a.75.75 0 0 1-.53-1.28l.621-.622a2.25 2.25 0 0 0 .659-1.59V18h-3a3 3 0 0 1-3-3V5.25Zm1.5 0v7.5a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5v-7.5a1.5 1.5 0 0 0-1.5-1.5H5.25a1.5 1.5 0 0 0-1.5 1.5Z" clipRule="evenodd" />
           </svg>
@@ -129,6 +129,7 @@ function MainPage() {
   const showMember = searchParams.get("member") === "true" || false
   const groupId = searchParams.get("group")
   const [newGroupName, setNewGroupName] = useState("");
+  const navigate = useNavigate();
 
   const setActiveTab = (tab) => {
     searchParams.set("tab", tab)
@@ -161,6 +162,15 @@ function MainPage() {
     setSelectedGroup(group);
     searchParams.set("group", group.id);
     setSearchParams(searchParams);
+  };
+
+  const handleVideoCall = () => {
+    if (selectedGroup) {
+      window.open(`/video-call/${selectedGroup.id}`, '_blank');
+    }
+    else {
+      window.open(`/video-call/`, '_blank');
+    }
   };
 
   useEffect(() => {
@@ -249,6 +259,7 @@ function MainPage() {
             setActiveTab={setActiveTab}
             showMember={showMember}
             setShowMember={setShowMember}
+            onVideoCall={handleVideoCall}
           />
           <div className="flex flex-row h-[calc(100%-4rem)]">
             {renderView()}
